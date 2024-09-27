@@ -56,14 +56,20 @@
     <div v-if="message" class="message">
       {{ message }}
     </div>
+
+    <ConfigDisplay />
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import ConfigDisplay from './components/ConfigDisplay.vue';
 
 export default {
   name: 'App',
+  components: {
+    ConfigDisplay
+  },
   data() {
     return {
       config: {
@@ -79,7 +85,7 @@ export default {
   methods: {
     async handleSubmit() {
       try {
-        const response = await axios.post('http://localhost:8080/api/config', this.config);
+        const response = await axios.post('/api/config', this.config);
         this.message = response.data;
         // 清空表单
         this.config = {

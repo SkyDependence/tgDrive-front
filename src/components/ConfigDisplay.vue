@@ -31,7 +31,7 @@ export default {
   methods: {
     async fetchConfig() {
       try {
-        const response = await axios.get('http://localhost:8080/api/config');
+        const response = await axios.get('/api/config');
         this.config = response.data;
       } catch (error) {
         console.error('获取配置失败:', error);

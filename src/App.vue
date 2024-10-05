@@ -76,6 +76,18 @@
       {{ message }}
     </div>
 
+    <!-- 新增：配置选择 -->
+    <div class="config-selector">
+      <h2 class="title">选择配置文件</h2>
+      <input
+        type="text"
+        v-model="configFilename"
+        class="input"
+        placeholder="请输入配置文件名"
+      />
+      <button @click="loadConfig" class="button">加载配置</button>
+    </div>
+
     <ConfigDisplay :filename="filename" />
   </div>
 </template>
@@ -83,15 +95,29 @@
 <script>
 import axios from 'axios';
 import ConfigDisplay from './components/ConfigDisplay.vue';
+import { createRouter, createWebHistory } from 'vue-router';
+import UploadPage from './components/UploadPage.vue';
+
+// Vue Router setup
+const routes = [
+  { path: '/upload', component: UploadPage },
+  // 其他路由可以在这里添加
+];
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+});
 
 export default {
   name: 'App',
+  router,
   components: {
     ConfigDisplay
   },
   data() {
     return {
-      filename: '',  // 新增：用于存储文件名
+      filename: '',
+      configFilename: '',
       config: {
         token: '',
         target: '',
@@ -126,6 +152,21 @@ export default {
           this.message = '提交失败，请重试。';
         }
         console.error('提交失败:', error);
+      }
+    },
+    async loadConfig() {
+      try {
+        const response = await axios.get(`/api/config/${this.configFilename}`);
+        this.config = response.data;
+        this.message = '配置加载成功！';
+        this.$router.push('/upload');
+      } catch (error) {
+        if (error.response && error.response.data) {
+          this.message = '加载配置失败: ' + JSON.stringify(error.response.data);
+        } else {
+          this.message = '加载配置失败，请重试。';
+        }
+        console.error('加载配置失败:', error);
       }
     }
   }

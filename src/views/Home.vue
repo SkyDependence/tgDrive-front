@@ -29,7 +29,7 @@
       </div>
 
       <div class="form-group">
-        <label for="target" class="label">ChannelName:</label>
+        <label for="target" class="label">chatID:</label>
         <input
           type="text"
           id="target"

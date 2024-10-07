@@ -157,9 +157,10 @@ export default {
     async loadConfig() {
       try {
         const response = await axios.get(`/api/config/${this.configFilename}`);
-        this.config = response.data;
-        this.message = '配置加载成功！';
-        this.$router.push('/upload');
+        this.message = response.data;
+        if (response.data === '加载配置成功') {
+          this.$router.push('/upload');
+        }
       } catch (error) {
         if (error.response && error.response.data) {
           this.message = '加载配置失败: ' + JSON.stringify(error.response.data);

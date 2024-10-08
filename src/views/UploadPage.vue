@@ -14,6 +14,19 @@
 
     <button @click="handleUpload" class="button" :disabled="!selectedFile">上传文件</button>
 
+    <div class="form-group">
+      <label for="messageInput" class="label">发送消息:</label>
+      <input
+        type="text"
+        id="messageInput"
+        v-model="inputMessage"
+        placeholder="输入消息..."
+        class="input"
+      />
+    </div>
+
+    <button @click="handleSendMessage" class="button" :disabled="!inputMessage">发送消息</button>
+
     <div v-if="message" class="message">
       {{ message }}
     </div>
@@ -28,6 +41,7 @@ export default {
   data() {
     return {
       selectedFile: null,
+      inputMessage: '',
       message: ''
     };
   },
@@ -58,6 +72,25 @@ export default {
           this.message = '上传失败，请重试。';
         }
         console.error('上传失败:', error);
+      }
+    },
+    async handleSendMessage() {
+      if (!this.inputMessage) {
+        this.message = '请先输入消息。';
+        return;
+      }
+      
+      try {
+        await axios.post('/api/send-message', { message: this.inputMessage });
+        this.message = '消息发送成功！';
+        this.inputMessage = '';
+      } catch (error) {
+        if (error.response && error.response.data) {
+          this.message = '消息发送失败: ' + error.response.data;
+        } else {
+          this.message = '消息发送失败，请重试。';
+        }
+        console.error('消息发送失败:', error);
       }
     }
   }

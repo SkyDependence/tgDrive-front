@@ -59,12 +59,14 @@ export default {
       formData.append('file', this.selectedFile);
       
       try {
-        await axios.post('/api/upload', formData, {
+        const response = await axios.post('/api/upload', formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
-        this.message = '文件上传成功！';
+        console.log("完整的响应：", response);
+        this.message = response.data;
+        console.log(response.data)
       } catch (error) {
         if (error.response && error.response.data) {
           this.message = '上传失败: ' + error.response.data;

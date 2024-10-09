@@ -2,7 +2,8 @@
   <div
     id="upload-page"
     class="app-container"
-    @dragover.prevent
+    @dragover.prevent="toggleDragging(true)"
+    @dragleave.prevent="toggleDragging(false)"
     @drop.prevent="handleDrop"
     @paste.prevent="handlePaste"
   >
@@ -10,24 +11,28 @@
 
     <div
       class="form-group"
-      @dragover.prevent
-      @drop.prevent="handleDrop"
       :class="{ 'dragging': isDragging }"
+      @click="triggerFileInput"
     >
       <label for="file" class="label">选择文件或拖动文件到此处:</label>
       <input
         type="file"
         id="file"
         @change="handleFileSelect"
-        class="input"
+        ref="fileInput"
+        class="hidden-input"
       />
+      <div class="custom-file-input">
+        <span>{{ selectedFileName || '未选择任何文件' }}</span>
+        <button type="button">选择文件</button>
+      </div>
     </div>
 
     <button @click="handleUpload" class="button" :disabled="!selectedFile">
       上传文件
     </button>
 
-    <div class="form-group">
+    <div class="message-group">
       <label for="messageInput" class="label">发送消息:</label>
       <input
         type="text"
@@ -56,14 +61,43 @@ export default {
   data() {
     return {
       selectedFile: null,
+      selectedFileName: '',
       inputMessage: '',
       message: '',
-      isDragging: false, // 用来指示是否正在拖动文件
+      isDragging: false,
     };
   },
   methods: {
+    triggerFileInput() {
+      this.$refs.fileInput.click();
+    },
     handleFileSelect(event) {
-      this.selectedFile = event.target.files[0];
+      this.setFile(event.target.files[0]);
+    },
+    handleDrop(event) {
+      this.toggleDragging(false);
+      const files = event.dataTransfer.files;
+      if (files.length > 0) {
+        this.setFile(files[0]);
+      }
+    },
+    handlePaste(event) {
+      const items = event.clipboardData.items;
+      for (let item of items) {
+        if (item.kind === 'file') {
+          this.setFile(item.getAsFile());
+          break;
+        }
+      }
+    },
+    toggleDragging(isDragging) {
+      this.isDragging = isDragging;
+    },
+    setFile(file) {
+      if (file) {
+        this.selectedFile = file;
+        this.selectedFileName = file.name;
+      }
     },
     async handleUpload() {
       if (!this.selectedFile) {
@@ -80,12 +114,9 @@ export default {
             'Content-Type': 'multipart/form-data',
           },
         });
-        this.message = response.data;
+        this.message = '上传成功: ' + response.data;
       } catch (error) {
-        this.message =
-          error.response && error.response.data
-            ? '上传失败: ' + error.response.data
-            : '上传失败，请重试。';
+        this.message = error.response?.data || '上传失败，请重试。';
       }
     },
     async handleSendMessage() {
@@ -99,35 +130,16 @@ export default {
         this.message = '消息发送成功！';
         this.inputMessage = '';
       } catch (error) {
-        this.message =
-          error.response && error.response.data
-            ? '消息发送失败: ' + error.response.data
-            : '消息发送失败，请重试。';
-      }
-    },
-    handleDrop(event) {
-      this.isDragging = false;
-      const files = event.dataTransfer.files;
-      if (files.length > 0) {
-        this.selectedFile = files[0];
-      }
-    },
-    handlePaste(event) {
-      const items = event.clipboardData.items;
-      for (let item of items) {
-        if (item.kind === 'file') {
-          this.selectedFile = item.getAsFile();
-          break;
-        }
+        this.message = error.response?.data || '消息发送失败，请重试。';
       }
     },
   },
 };
 </script>
 
-<style>
+<style scoped>
 .app-container {
-  max-width: 600px;
+  max-width: 90%;
   margin: 0 auto;
   padding: 2rem;
   background-color: #f9f9f9;
@@ -150,6 +162,11 @@ export default {
   border: 2px dashed #ccc;
   border-radius: 6px;
   text-align: center;
+  cursor: pointer;
+}
+
+.message-group {
+  margin-bottom: 1.5rem;
 }
 
 .dragging {
@@ -165,19 +182,32 @@ export default {
   color: #333;
 }
 
-.input {
-  width: 100%;
+.custom-file-input {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 0.75rem;
   font-size: 1rem;
-  border-radius: 6px;
   border: 1px solid #ccc;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  outline: none;
-  transition: border-color 0.3s ease;
+  border-radius: 6px;
+  background-color: white;
 }
 
-.input:focus {
+.custom-file-input button {
+  background-color: #007bff;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.custom-file-input:hover {
   border-color: #007bff;
+}
+
+.hidden-input {
+  display: none;
 }
 
 .button {
@@ -206,5 +236,24 @@ export default {
   margin-top: 1rem;
   font-weight: bold;
   text-align: center;
+  word-wrap: break-word;
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 600px;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
 }
 </style>

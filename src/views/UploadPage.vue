@@ -1,9 +1,20 @@
 <template>
-  <div id="upload-page" class="app-container">
+  <div
+    id="upload-page"
+    class="app-container"
+    @dragover.prevent
+    @drop.prevent="handleDrop"
+    @paste.prevent="handlePaste"
+  >
     <h1 class="title">上传页面</h1>
 
-    <div class="form-group">
-      <label for="file" class="label">选择文件:</label>
+    <div
+      class="form-group"
+      @dragover.prevent
+      @drop.prevent="handleDrop"
+      :class="{ 'dragging': isDragging }"
+    >
+      <label for="file" class="label">选择文件或拖动文件到此处:</label>
       <input
         type="file"
         id="file"
@@ -12,7 +23,9 @@
       />
     </div>
 
-    <button @click="handleUpload" class="button" :disabled="!selectedFile">上传文件</button>
+    <button @click="handleUpload" class="button" :disabled="!selectedFile">
+      上传文件
+    </button>
 
     <div class="form-group">
       <label for="messageInput" class="label">发送消息:</label>
@@ -25,7 +38,9 @@
       />
     </div>
 
-    <button @click="handleSendMessage" class="button" :disabled="!inputMessage">发送消息</button>
+    <button @click="handleSendMessage" class="button" :disabled="!inputMessage">
+      发送消息
+    </button>
 
     <div v-if="message" class="message">
       {{ message }}
@@ -42,7 +57,8 @@ export default {
     return {
       selectedFile: null,
       inputMessage: '',
-      message: ''
+      message: '',
+      isDragging: false, // 用来指示是否正在拖动文件
     };
   },
   methods: {
@@ -54,26 +70,22 @@ export default {
         this.message = '请先选择一个文件。';
         return;
       }
-      
+
       const formData = new FormData();
       formData.append('file', this.selectedFile);
-      
+
       try {
         const response = await axios.post('/api/upload', formData, {
           headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+            'Content-Type': 'multipart/form-data',
+          },
         });
-        console.log("完整的响应：", response);
         this.message = response.data;
-        console.log(response.data)
       } catch (error) {
-        if (error.response && error.response.data) {
-          this.message = '上传失败: ' + error.response.data;
-        } else {
-          this.message = '上传失败，请重试。';
-        }
-        console.error('上传失败:', error);
+        this.message =
+          error.response && error.response.data
+            ? '上传失败: ' + error.response.data
+            : '上传失败，请重试。';
       }
     },
     async handleSendMessage() {
@@ -81,26 +93,39 @@ export default {
         this.message = '请先输入消息。';
         return;
       }
-      
+
       try {
         await axios.post('/api/send-message', { message: this.inputMessage });
         this.message = '消息发送成功！';
         this.inputMessage = '';
       } catch (error) {
-        if (error.response && error.response.data) {
-          this.message = '消息发送失败: ' + error.response.data;
-        } else {
-          this.message = '消息发送失败，请重试。';
-        }
-        console.error('消息发送失败:', error);
+        this.message =
+          error.response && error.response.data
+            ? '消息发送失败: ' + error.response.data
+            : '消息发送失败，请重试。';
       }
-    }
-  }
+    },
+    handleDrop(event) {
+      this.isDragging = false;
+      const files = event.dataTransfer.files;
+      if (files.length > 0) {
+        this.selectedFile = files[0];
+      }
+    },
+    handlePaste(event) {
+      const items = event.clipboardData.items;
+      for (let item of items) {
+        if (item.kind === 'file') {
+          this.selectedFile = item.getAsFile();
+          break;
+        }
+      }
+    },
+  },
 };
 </script>
 
 <style>
-/* Modern Styling for the Upload Page */
 .app-container {
   max-width: 600px;
   margin: 0 auto;
@@ -121,6 +146,15 @@ export default {
 
 .form-group {
   margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 2px dashed #ccc;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.dragging {
+  border-color: #007bff;
+  background-color: #e7f3ff;
 }
 
 .label {

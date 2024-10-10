@@ -139,87 +139,75 @@ export default {
 
 <style scoped>
 .app-container {
-  max-width: 90%;
-  margin: 0 auto;
-  padding: 2rem;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .title {
-  font-size: 2rem;
-  color: #333;
   text-align: center;
-  margin-bottom: 1.5rem;
-  font-weight: bold;
+  color: #333;
+  font-size: 24px;
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  margin-top: 20px;
   border: 2px dashed #ccc;
-  border-radius: 6px;
+  padding: 10px;
   text-align: center;
-  cursor: pointer;
+  border-radius: 5px;
 }
 
-.message-group {
-  margin-bottom: 1.5rem;
-}
-
-.dragging {
-  border-color: #007bff;
-  background-color: #e7f3ff;
+.form-group.dragging {
+  border-color: #66ccff;
+  background-color: #f3f9ff;
 }
 
 .label {
+  font-weight: bold;
   display: block;
-  font-size: 1rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: #333;
+  margin-bottom: 10px;
+  color: #666;
+}
+
+.hidden-input {
+  visibility: hidden;
+  position: absolute;
 }
 
 .custom-file-input {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background-color: white;
+  cursor: pointer;
+  background-color: #f8f8f8;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.custom-file-input span {
+  margin-right: 10px;
 }
 
 .custom-file-input button {
   background-color: #007bff;
   color: white;
-  padding: 0.5rem 1rem;
   border: none;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 5px;
   cursor: pointer;
-}
-
-.custom-file-input:hover {
-  border-color: #007bff;
-}
-
-.hidden-input {
-  display: none;
 }
 
 .button {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  color: white;
-  background-color: #007bff;
+  width: 100%;
+  padding: 10px;
   border: none;
-  border-radius: 6px;
+  background-color: #5cb85c;
+  color: white;
+  font-size: 16px;
+  border-radius: 5px;
+  margin-top: 20px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
 .button:disabled {
@@ -227,33 +215,22 @@ export default {
   cursor: not-allowed;
 }
 
-.button:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.message {
-  color: green;
-  margin-top: 1rem;
-  font-weight: bold;
-  text-align: center;
-  word-wrap: break-word;
+.message-group {
+  margin-top: 20px;
 }
 
 .input {
   width: 100%;
-  padding: 0.5rem;
-  font-size: 1rem;
+  padding: 8px;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
-@media (min-width: 768px) {
-  .app-container {
-    max-width: 600px;
-  }
-
-  .title {
-    font-size: 2.5rem;
-  }
+.message {
+  margin-top: 20px;
+  background-color: #f0f8ff;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #b6dfff;
 }
 </style>

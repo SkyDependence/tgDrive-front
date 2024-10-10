@@ -162,7 +162,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 /* Modern Styling for the App */
 .app-container {
   max-width: 600px;

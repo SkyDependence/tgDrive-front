@@ -1,10 +1,10 @@
 <template>
   <div>
-    <h2>当前配置</h2>
+    <h2 class="title">当前配置</h2>
     
     <!-- 输入框：文件名 -->
     <div class="form-group">
-      <label for="config-filename">输入配置文件名:</label>
+      <label class="label" for="config-filename">输入配置文件名:</label>
       <input
         type="text"
         id="config-filename"
@@ -63,21 +63,51 @@ export default {
 </script>
 
 <style scoped>
-h2 {
-  margin-top: 40px;
+.title {
+  font-size: 2rem;
+  color: #333;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-weight: bold;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #333;
 }
 
 input {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
+  width: 95%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  outline: none;
+  transition: border-color 0.3s ease;
 }
 
 button {
-  padding: 8px 16px;
+  margin-top: 1rem;
+  width: 100%;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
 }
 </style>

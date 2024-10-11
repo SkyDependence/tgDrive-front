@@ -40,6 +40,16 @@
       </div>
 
       <div class="form-group">
+        <label for="url" class="label">url:</label>
+        <input
+          type="text"
+          id="url"
+          v-model="config.url"
+          class="input"
+        />
+      </div>
+
+      <div class="form-group">
         <label for="pass" class="label">Pass:</label>
         <input
           type="password"
@@ -55,16 +65,6 @@
           type="text"
           id="mode"
           v-model="config.mode"
-          class="input"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="url" class="label">url:</label>
-        <input
-          type="text"
-          id="url"
-          v-model="config.url"
           class="input"
         />
       </div>

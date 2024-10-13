@@ -14,7 +14,7 @@
       :class="{ 'dragging': isDragging }"
       @click="triggerFileInput"
     >
-      <label for="file" class="label">选择文件、粘贴文件或拖动文件到此处:</label>
+      <label for="file" class="label">选择文件或拖动文件到此处:</label>
       <input
         type="file"
         id="file"
@@ -40,8 +40,13 @@
       <button @click="clearAllFiles" class="button">清空全部文件</button>
     </div>
 
-    <button @click="handleUpload" class="button" :disabled="!selectedFiles.length">
-      上传文件
+    <!-- 上传按钮，上传时禁用并显示“正在上传” -->
+    <button 
+      @click="handleUpload" 
+      class="button" 
+      :disabled="isUploading || !selectedFiles.length"
+    >
+      {{ isUploading ? '正在上传' : '上传文件' }}
     </button>
 
     <div class="message-group">
@@ -83,6 +88,7 @@ export default {
       inputMessage: '',
       message: '',
       isDragging: false,
+      isUploading: false  // 标志是否正在上传
     };
   },
   methods: {
@@ -137,16 +143,22 @@ export default {
       });
 
       try {
+        // 设置上传中状态，禁用按钮
+        this.isUploading = true;
+
         const response = await axios.post('/api/upload', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-        // 假设后端返回的 JSON 数据
-        this.uploadedFiles = response.data; // 更新 uploadedFiles 列表
+
+        this.uploadedFiles = response.data; // 更新上传的文件列表
         this.selectedFiles = []; // 上传成功后清空文件列表
       } catch (error) {
         this.message = error.response?.data || '上传失败，请重试。';
+      } finally {
+        // 上传完成或失败后，重置上传状态
+        this.isUploading = false;
       }
     },
     async handleSendMessage() {

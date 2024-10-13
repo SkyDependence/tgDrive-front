@@ -59,8 +59,14 @@
       发送消息
     </button>
 
-    <div v-if="message" class="message">
-      {{ message }}
+    <div v-if="uploadedFiles.length > 0" class="message">
+      <h3>上传成功的文件：</h3>
+      <ul>
+        <li v-for="(file, index) in uploadedFiles" :key="index">
+          <span>{{ file.fileName }}: </span>
+          <a :href="file.downloadLink" target="_blank">{{ file.downloadLink }}</a>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
@@ -73,6 +79,7 @@ export default {
   data() {
     return {
       selectedFiles: [],  // 用来存储多个选中的文件
+      uploadedFiles: [],  // 存储上传成功后返回的文件数据
       inputMessage: '',
       message: '',
       isDragging: false,
@@ -135,7 +142,8 @@ export default {
             'Content-Type': 'multipart/form-data',
           },
         });
-        this.message = '上传成功: ' + response.data;
+        // 假设后端返回的 JSON 数据
+        this.uploadedFiles = response.data; // 更新 uploadedFiles 列表
         this.selectedFiles = []; // 上传成功后清空文件列表
       } catch (error) {
         this.message = error.response?.data || '上传失败，请重试。';
@@ -270,5 +278,16 @@ export default {
   padding: 10px;
   border-radius: 5px;
   border: 1px solid #b6dfff;
+  word-break: break-word; /* 让长单词或链接在需要时自动换行 */
+  overflow-wrap: break-word; /* 兼容处理长单词自动换行 */
+}
+
+.message ul {
+  list-style: none;
+  padding: 0;
+}
+
+.message li {
+  padding: 5px 0;
 }
 </style>

@@ -14,21 +14,33 @@
       :class="{ 'dragging': isDragging }"
       @click="triggerFileInput"
     >
-      <label for="file" class="label">选择文件或拖动文件到此处:</label>
+      <label for="file" class="label">选择文件、粘贴文件或拖动文件到此处:</label>
       <input
         type="file"
         id="file"
+        multiple  
         @change="handleFileSelect"
         ref="fileInput"
         class="hidden-input"
       />
       <div class="custom-file-input">
-        <span>{{ selectedFileName || '未选择任何文件' }}</span>
         <button type="button">选择文件</button>
       </div>
     </div>
 
-    <button @click="handleUpload" class="button" :disabled="!selectedFile">
+    <!-- 候选框显示文件列表 -->
+    <div class="file-list" v-if="selectedFiles.length > 0">
+      <h3>待上传文件：</h3>
+      <ul>
+        <li v-for="(file, index) in selectedFiles" :key="index">
+          <span>{{ file.name }} ({{ (file.size / 1024).toFixed(2) }} KB)</span>
+          <button @click="removeFile(index)">删除</button>
+        </li>
+      </ul>
+      <button @click="clearAllFiles" class="button">清空全部文件</button>
+    </div>
+
+    <button @click="handleUpload" class="button" :disabled="!selectedFiles.length">
       上传文件
     </button>
 
@@ -60,8 +72,7 @@ export default {
   name: 'UploadPage',
   data() {
     return {
-      selectedFile: null,
-      selectedFileName: '',
+      selectedFiles: [],  // 用来存储多个选中的文件
       inputMessage: '',
       message: '',
       isDragging: false,
@@ -72,20 +83,20 @@ export default {
       this.$refs.fileInput.click();
     },
     handleFileSelect(event) {
-      this.setFile(event.target.files[0]);
+      this.addFiles(event.target.files); // 处理多个文件并添加到列表中
     },
     handleDrop(event) {
       this.toggleDragging(false);
       const files = event.dataTransfer.files;
       if (files.length > 0) {
-        this.setFile(files[0]);
+        this.addFiles(files);
       }
     },
     handlePaste(event) {
       const items = event.clipboardData.items;
       for (let item of items) {
         if (item.kind === 'file') {
-          this.setFile(item.getAsFile());
+          this.addFiles([item.getAsFile()]);
           break;
         }
       }
@@ -93,20 +104,30 @@ export default {
     toggleDragging(isDragging) {
       this.isDragging = isDragging;
     },
-    setFile(file) {
-      if (file) {
-        this.selectedFile = file;
-        this.selectedFileName = file.name;
+    addFiles(files) {
+      if (files.length > 0) {
+        // 添加新文件到现有文件数组中，而不是替换
+        this.selectedFiles = [...this.selectedFiles, ...Array.from(files)];
       }
     },
+    removeFile(index) {
+      // 移除单个文件
+      this.selectedFiles.splice(index, 1);
+    },
+    clearAllFiles() {
+      // 清空所有文件
+      this.selectedFiles = [];
+    },
     async handleUpload() {
-      if (!this.selectedFile) {
-        this.message = '请先选择一个文件。';
+      if (this.selectedFiles.length === 0) {
+        this.message = '请先选择至少一个文件。';
         return;
       }
 
       const formData = new FormData();
-      formData.append('file', this.selectedFile);
+      this.selectedFiles.forEach(file => {
+        formData.append('file', file); // 将每个文件添加到formData中
+      });
 
       try {
         const response = await axios.post('/api/upload', formData, {
@@ -115,6 +136,7 @@ export default {
           },
         });
         this.message = '上传成功: ' + response.data;
+        this.selectedFiles = []; // 上传成功后清空文件列表
       } catch (error) {
         this.message = error.response?.data || '上传失败，请重试。';
       }
@@ -213,6 +235,22 @@ export default {
 .button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.file-list {
+  margin-top: 20px;
+}
+
+.file-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.file-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
 }
 
 .message-group {

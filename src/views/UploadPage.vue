@@ -65,7 +65,7 @@
     </button>
 
     <div v-if="uploadedFiles.length > 0" class="message">
-      <h3>上传成功的文件：</h3>
+      <h3> 消息：</h3>
       <ul>
         <li v-for="(file, index) in uploadedFiles" :key="index">
           <span>{{ file.fileName }}: </span>

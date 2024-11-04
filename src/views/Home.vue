@@ -24,6 +24,7 @@
           id="token"
           v-model="config.token"
           class="input"
+          placeholder="请输入telegram botToken"
           required
         />
       </div>
@@ -35,26 +36,29 @@
           id="target"
           v-model="config.target"
           class="input"
+          placeholder="请输入bot和你的对话的id"
           required
         />
       </div>
 
       <div class="form-group">
-        <label for="url" class="label">url:</label>
+        <label for="url" class="label">url:(选填)</label>
         <input
           type="text"
           id="url"
           v-model="config.url"
+          placeholder="请输入网站的url"
           class="input"
         />
       </div>
 
       <div class="form-group">
-        <label for="pass" class="label">Pass:</label>
+        <label for="pass" class="label">Pass:(选填)</label>
         <input
           type="password"
           id="pass"
           v-model="config.pass"
+          placeholder="请输入下载文件时需要的密码"
           class="input"
         />
       </div>

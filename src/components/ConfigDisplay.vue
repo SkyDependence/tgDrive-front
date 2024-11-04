@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="title">当前配置</h2>
+    <h2 class="title">查询配置</h2>
     
     <!-- 输入框：文件名 -->
     <div class="form-group">

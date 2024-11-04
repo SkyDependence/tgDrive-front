@@ -19,7 +19,6 @@
       <p><strong>token:</strong> {{ config.token }}</p>
       <p><strong>chatID:</strong> {{ config.target }}</p>
       <p><strong>Pass:</strong> {{ config.pass }}</p>
-      <p><strong>Mode:</strong> {{ config.mode }}</p>
       <p><strong>url:</strong> {{ config.url }}</p>
     </div>
     

@@ -59,16 +59,6 @@
         />
       </div>
 
-      <div class="form-group">
-        <label for="mode" class="label">Mode:</label>
-        <input
-          type="text"
-          id="mode"
-          v-model="config.mode"
-          class="input"
-        />
-      </div>
-
       <button type="submit" class="button">提交</button>
     </form>
 
@@ -110,7 +100,6 @@ export default {
         token: '',
         target: '',
         pass: '',
-        mode: '',
         url: ''
       },
       message: ''
@@ -130,7 +119,6 @@ export default {
           token: '',
           target: '',
           pass: '',
-          mode: '',
           url: ''
         };
       } catch (error) {

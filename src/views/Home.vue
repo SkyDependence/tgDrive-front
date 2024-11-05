@@ -1,5 +1,10 @@
 <template>
   <div id="app" class="app-container">
+    <!-- 跳转按钮 -->
+    <div class="top-right-button">
+      <el-button type="primary" @click="goToFileList">文件列表</el-button>
+    </div>
+
     <h1 class="title">配置表单</h1>
 
     <!-- 配置表单 -->
@@ -193,6 +198,11 @@ const fetchConfig = async (filename: string) => {
     configData.value = null;
   }
 };
+
+// 跳转到文件列表页面
+const goToFileList = () => {
+  router.push('/fileList');
+};
 </script>
 
 <style scoped>
@@ -203,6 +213,13 @@ const fetchConfig = async (filename: string) => {
   background-color: #f5f7fa;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.top-right-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
 }
 
 .title {

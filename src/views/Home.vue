@@ -2,233 +2,240 @@
   <div id="app" class="app-container">
     <h1 class="title">配置表单</h1>
 
-    <!-- 输入框：文件名 -->
-    <div class="form-group">
-      <label for="filename" class="label">JSON 文件名:</label>
-      <input
-        type="text"
-        id="filename"
-        v-model="filename"
-        class="input"
-        placeholder="请输入JSON文件名"
-        required
-      />
-    </div>
-
     <!-- 配置表单 -->
-    <form @submit.prevent="handleSubmit">
-      <div class="form-group">
-        <label for="token" class="label">botToken:</label>
-        <input
-          type="text"
-          id="token"
-          v-model="config.token"
-          class="input"
+    <el-form
+      ref="ruleFormRef"
+      :model="ruleForm"
+      :rules="rules"
+      label-width="120px"
+      class="demo-ruleForm"
+    >
+      <el-form-item label="JSON 文件名" prop="filename">
+        <el-input
+          v-model="ruleForm.filename"
+          placeholder="请输入JSON文件名"
+          required
+          class="styled-input"
+        />
+      </el-form-item>
+
+      <el-form-item label="botToken" prop="token">
+        <el-input
+          v-model="ruleForm.token"
           placeholder="请输入telegram botToken"
           required
+          class="styled-input"
         />
-      </div>
+      </el-form-item>
 
-      <div class="form-group">
-        <label for="target" class="label">chatID:</label>
-        <input
-          type="text"
-          id="target"
-          v-model="config.target"
-          class="input"
+      <el-form-item label="chatID" prop="target">
+        <el-input
+          v-model="ruleForm.target"
           placeholder="请输入bot和你的对话的id"
           required
+          class="styled-input"
         />
-      </div>
+      </el-form-item>
 
-      <div class="form-group">
-        <label for="url" class="label">url:(选填)</label>
-        <input
-          type="text"
-          id="url"
-          v-model="config.url"
+      <el-form-item label="url (选填)" prop="url">
+        <el-input
+          v-model="ruleForm.url"
           placeholder="请输入网站的url"
-          class="input"
+          class="styled-input"
         />
-      </div>
+      </el-form-item>
 
-      <div class="form-group">
-        <label for="pass" class="label">Pass:(选填)</label>
-        <input
+      <el-form-item label="Pass (选填)" prop="pass">
+        <el-input
+          v-model="ruleForm.pass"
           type="password"
-          id="pass"
-          v-model="config.pass"
           placeholder="请输入下载文件时需要的密码"
-          class="input"
+          class="styled-input"
         />
-      </div>
+      </el-form-item>
 
-      <button type="submit" class="button">提交</button>
-    </form>
+      <el-form-item>
+        <el-button type="primary" @click="handleSubmit" class="submit-button">提交</el-button>
+        <el-button @click="resetForm" class="reset-button">重置</el-button>
+      </el-form-item>
+    </el-form>
 
     <div v-if="message" class="message">
       {{ message }}
     </div>
 
-    <div class="config-selector">
-      <h2 class="title">选择配置文件</h2>
-      <input
-        type="text"
+    <!-- 加载配置文件 -->
+    <div class="config-section">
+      <h2 class="title">加载配置文件</h2>
+      <el-input
         v-model="configFilename"
-        class="input"
         placeholder="请输入配置文件名"
+        class="styled-input"
       />
-      <button @click="loadConfig" class="button">加载配置</button>
+      <div class="button-container">
+        <el-button type="primary" @click="loadConfig" class="submit-button">加载配置</el-button>
+      </div>
     </div>
 
-    <ConfigDisplay :filename="filename" />
+    <!-- 查询配置文件 -->
+    <div class="config-section">
+      <h2 class="title">查询配置文件</h2>
+      <el-form @submit.prevent class="query-form">
+        <el-input
+          v-model="filenameInput"
+          placeholder="请输入配置文件名"
+          class="styled-input"
+        />
+        <div class="button-container">
+          <el-button type="primary" @click="fetchConfig(filenameInput)" class="submit-button">查询</el-button>
+        </div>
+      </el-form>
+
+      <!-- 显示查询结果 -->
+      <div v-if="configData && configData.length">
+        <el-table :data="configData" style="width: 100%">
+          <el-table-column prop="key" label="配置项" />
+          <el-table-column prop="value" label="值" />
+        </el-table>
+      </div>
+      <div v-else>
+        <p>没有配置数据。</p>
+      </div>
+    </div>
   </div>
 </template>
 
-<script>
+<script lang="ts" setup>
+import { reactive, ref } from 'vue';
 import axios from 'axios';
-import ConfigDisplay from '@/components/ConfigDisplay.vue';
+import { useRouter } from 'vue-router';
+import type { FormInstance, FormRules } from 'element-plus';
 
+const ruleFormRef = ref<FormInstance>();
+const router = useRouter();
 
+const ruleForm = reactive({
+  filename: '',
+  token: '',
+  target: '',
+  url: '',
+  pass: '',
+});
 
-export default {
-  name: 'App',
-  components: {
-    ConfigDisplay
-  },
-  data() {
-    return {
-      filename: '',
-      configFilename: '',
-      config: {
-        token: '',
-        target: '',
-        pass: '',
-        url: ''
-      },
-      message: ''
-    };
-  },
-  methods: {
-    async handleSubmit() {
+const filenameInput = ref('');
+const configFilename = ref('');
+const configData = ref(null);
+const message = ref('');
+
+const rules = reactive<FormRules>({
+  filename: [{ required: true, message: '请输入JSON文件名', trigger: 'blur' }],
+  token: [{ required: true, message: '请输入telegram botToken', trigger: 'blur' }],
+  target: [{ required: true, message: '请输入chatID', trigger: 'blur' }],
+  url: [{ required: false, message: '请输入网站的url', trigger: 'blur' }],
+  pass: [{ required: false, message: '请输入下载文件时需要的密码', trigger: 'blur' }],
+});
+
+const handleSubmit = async () => {
+  if (!ruleFormRef.value) return;
+  ruleFormRef.value.validate(async (valid) => {
+    if (valid) {
       try {
-        const payload = {
-          name: this.filename,
-          ...this.config
-        };
+        const payload = { ...ruleForm };
         const response = await axios.post('/api/config', payload);
-        this.message = response.data;
-
-        this.config = {
+        message.value = response.data;
+        Object.assign(ruleForm, {
+          filename: '',
           token: '',
           target: '',
+          url: '',
           pass: '',
-          url: ''
-        };
+        });
       } catch (error) {
-        if (error.response && error.response.data) {
-          this.message = '提交失败: ' + JSON.stringify(error.response.data);
-        } else {
-          this.message = '提交失败，请重试。';
-        }
-        console.error('提交失败:', error);
+        message.value = error.response?.data ? '提交失败: ' + JSON.stringify(error.response.data) : '提交失败，请重试。';
       }
-    },
-    async loadConfig() {
-      try {
-        const response = await axios.get(`/api/config/${this.configFilename}`);
-        this.message = response.data;
-        console.log("开始页面跳转")
-        this.$router.push('/upload');
-        console.log("页面跳转成功")
-      } catch (error) {
-        if (error.response && error.response.data) {
-          this.message = '加载配置失败: ' + JSON.stringify(error.response.data);
-        } else {
-          this.message = '加载配置失败，请重试。';
-        }
-        console.error('加载配置失败:', error);
-      }
+    } else {
+      console.log('表单验证失败');
     }
+  });
+};
+
+const resetForm = () => {
+  if (!ruleFormRef.value) return;
+  ruleFormRef.value.resetFields();
+};
+
+const loadConfig = async () => {
+  try {
+    const response = await axios.get(`/api/config/${configFilename.value}`);
+    message.value = response.data;
+    router.push('/upload');
+  } catch (error) {
+    message.value = error.response?.data ? '加载配置失败: ' + JSON.stringify(error.response.data) : '加载配置失败，请重试。';
+  }
+};
+
+const fetchConfig = async (filename: string) => {
+  if (!filename) {
+    alert('请输入文件名');
+    return;
+  }
+  try {
+    const response = await axios.get('/api/config', { params: { filename } });
+    const data = response.data;
+    configData.value = [
+      { key: 'token', value: data.token },
+      { key: 'chatID', value: data.target },
+      { key: 'Pass', value: data.pass },
+      { key: 'url', value: data.url }
+    ];
+  } catch (error) {
+    console.error('获取配置失败:', error);
+    configData.value = null;
   }
 };
 </script>
 
 <style scoped>
-/* Modern Styling for the App */
 .app-container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  background-color: #f9f9f9;
+  background-color: #f5f7fa;
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 1.8rem;
   color: #333;
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   font-weight: bold;
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
+.config-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.label {
-  display: block;
-  font-size: 1rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: #333;
-}
-
-.input {
-  width: 95%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  outline: none;
-  transition: border-color 0.3s ease;
-}
-
-.input:focus {
-  border-color: #007bff;
-}
-
-.button {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  color: white;
-  background-color: #007bff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.button:hover {
-  background-color: #0056b3;
-}
-
-.message {
-  color: green;
-  margin-top: 1rem;
-  font-weight: bold;
-  text-align: center;
-}
-
-button {
-  margin-top: 1rem;
+.styled-input {
   width: 100%;
-  background-color: #007bff;
-  color: white;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.submit-button, .styled-button {
+  width: 200px;
+  background-color: #409eff;
+  color: #fff;
   border: none;
   border-radius: 6px;
   padding: 10px;
@@ -237,7 +244,30 @@ button {
   transition: background-color 0.3s ease;
 }
 
-button:hover {
-  background-color: #0056b3;
+.reset-button {
+  width: 200px;
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.submit-button:hover, .styled-button:hover {
+  background-color: #66b1ff;
+}
+
+.reset-button:hover {
+  background-color: #c0c0c0;
+}
+
+.message {
+  color: #67c23a;
+  margin-top: 1rem;
+  font-weight: bold;
+  text-align: center;
 }
 </style>

@@ -3,15 +3,15 @@
     <h2 class="title">文件列表</h2>
 
     <!-- 使用 el-table 展示文件列表 -->
-    <el-table :data="fileList" v-loading="loading" style="width: 100%" stripe>
-      <el-table-column prop="fileName" label="文件名" width="200" />
-      <el-table-column label="下载链接" width="150">
+    <el-table :data="fileList" v-loading="loading" style="width: 100%" stripe height="430">
+      <el-table-column prop="fileName" label="文件名" width="200" show-overflow-tooltip />
+      <el-table-column label="下载链接" width="150" show-overflow-tooltip>
         <template #default="{ row }">
           <el-link :href="row.downloadUrl" target="_blank">{{ row.downloadUrl }}</el-link>
         </template>
       </el-table-column>
       <el-table-column prop="size" label="文件大小" width="100" />
-      <el-table-column prop="fileId" label="文件 ID" width="150" />
+      <el-table-column prop="fileId" label="文件 ID" width="150" show-overflow-tooltip />
       <el-table-column label="上传时间" width="180">
         <template #default="{ row }">
           {{ formatUploadTime(row.uploadTime) }}

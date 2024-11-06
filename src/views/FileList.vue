@@ -3,7 +3,7 @@
     <h2 class="title">文件列表</h2>
 
     <!-- 使用 el-table 展示文件列表 -->
-    <el-table :data="fileList" v-loading="loading" style="width: 100%" stripe height=100%>
+    <el-table :data="fileList" v-loading="loading" style="width: 100%" stripe height="450">
       <el-table-column prop="fileName" label="文件名" width="200" show-overflow-tooltip />
       <el-table-column label="下载链接" width="150" show-overflow-tooltip>
         <template #default="{ row }">
@@ -21,11 +21,12 @@
 
     <!-- 分页控件 -->
     <el-pagination
-      v-if="fileList.length"
+      v-if="totalItems > 0"
       :current-page="currentPage"
       :page-size="pageSize"
-      layout="total, prev, pager, next"
       :total="totalItems"
+      layout="total, sizes, prev, pager, next, jumper"
+      @size-change="handleSizeChange"
       @current-change="handlePageChange"
     />
   </div>
@@ -71,6 +72,13 @@ const formatUploadTime = (uploadTime) => {
 // 处理分页更改
 const handlePageChange = (page) => {
   currentPage.value = page;
+  fetchFileList();
+};
+
+// 处理页面大小更改
+const handleSizeChange = (size) => {
+  pageSize.value = size;
+  currentPage.value = 1; // 重置到第一页
   fetchFileList();
 };
 

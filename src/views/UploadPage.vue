@@ -12,7 +12,8 @@
       <label for="file" class="label">选择文件或拖动文件到此处:</label>
       <input type="file" id="file" multiple @change="handleFileSelect" ref="fileInput" class="hidden-input" />
       <div class="custom-file-input">
-        <button type="button">选择文件</button>
+        <!-- 阻止事件冒泡 -->
+        <button type="button" @click.stop="triggerFileInput">选择文件</button>
       </div>
     </div>
 
@@ -55,12 +56,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive } from 'vue';
+import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
+const fileInput = ref(null); // 文件输入引用
 const selectedFiles = ref([]);
 const uploadedFiles = ref([]);
 const inputMessage = ref('');
@@ -68,8 +70,8 @@ const message = ref('');
 const isDragging = ref(false);
 const isUploading = ref(false);
 
-const triggerFileInput = (fileInputRef) => {
-  fileInputRef.value.click();
+const triggerFileInput = () => {
+  if (fileInput.value) fileInput.value.click(); // 触发文件选择
 };
 
 const handleFileSelect = (event) => {
@@ -160,11 +162,6 @@ const goToFileList = () => {
   router.push('/fileList');
 };
 </script>
-
-<style scoped>
-/* 样式保持不变 */
-</style>
-
 
 <style scoped>
 .app-container {

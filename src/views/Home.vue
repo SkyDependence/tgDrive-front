@@ -15,9 +15,9 @@
       label-width="120px"
       class="demo-ruleForm"
     >
-      <el-form-item label="JSON 文件名" prop="filename">
+      <el-form-item label="JSON 文件名" prop="name">
         <el-input
-          v-model="ruleForm.filename"
+          v-model="ruleForm.name"
           placeholder="请输入JSON文件名"
           required
           class="styled-input"
@@ -120,7 +120,7 @@ const ruleFormRef = ref<FormInstance>();
 const router = useRouter();
 
 const ruleForm = reactive({
-  filename: '',
+  name: '',
   token: '',
   target: '',
   url: '',
@@ -133,7 +133,7 @@ const configData = ref(null);
 const message = ref('');
 
 const rules = reactive<FormRules>({
-  filename: [{ required: true, message: '请输入JSON文件名', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入JSON文件名', trigger: 'blur' }],
   token: [{ required: true, message: '请输入telegram botToken', trigger: 'blur' }],
   target: [{ required: true, message: '请输入chatID', trigger: 'blur' }],
   url: [{ required: false, message: '请输入网站的url', trigger: 'blur' }],
@@ -149,7 +149,7 @@ const handleSubmit = async () => {
         const response = await axios.post('/api/config', payload);
         message.value = response.data;
         Object.assign(ruleForm, {
-          filename: '',
+          name: '',
           token: '',
           target: '',
           url: '',
@@ -179,13 +179,13 @@ const loadConfig = async () => {
   }
 };
 
-const fetchConfig = async (filename: string) => {
-  if (!filename) {
+const fetchConfig = async (name: string) => {
+  if (!name) {
     alert('请输入文件名');
     return;
   }
   try {
-    const response = await axios.get('/api/config', { params: { filename } });
+    const response = await axios.get('/api/config', { params: { name } });
     const data = response.data;
     configData.value = [
       { key: 'token', value: data.token },

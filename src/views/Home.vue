@@ -1,9 +1,5 @@
 <template>
   <div id="app" class="app-container">
-    <!-- 跳转按钮 -->
-    <div class="top-right-button">
-      <el-button type="primary" @click="goToFileList">文件列表</el-button>
-    </div>
 
     <h1 class="title">配置表单</h1>
 
@@ -199,10 +195,6 @@ const fetchConfig = async (name: string) => {
   }
 };
 
-// 跳转到文件列表页面
-const goToFileList = () => {
-  router.push('/fileList');
-};
 </script>
 
 <style scoped>
@@ -216,11 +208,6 @@ const goToFileList = () => {
   position: relative;
 }
 
-.top-right-button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-}
 
 .title {
   font-size: 1.8rem;

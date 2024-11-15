@@ -11,10 +11,10 @@
       label-width="120px"
       class="demo-ruleForm"
     >
-      <el-form-item label="JSON 文件名" prop="name">
+      <el-form-item label="配置文件名" prop="name">
         <el-input
           v-model="ruleForm.name"
-          placeholder="请输入JSON文件名"
+          placeholder="请输入配置文件名"
           required
           class="styled-input"
         />
@@ -129,7 +129,7 @@ const configData = ref(null);
 const message = ref('');
 
 const rules = reactive<FormRules>({
-  name: [{ required: true, message: '请输入JSON文件名', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入配置文件名', trigger: 'blur' }],
   token: [{ required: true, message: '请输入telegram botToken', trigger: 'blur' }],
   target: [{ required: true, message: '请输入chatID', trigger: 'blur' }],
   url: [{ required: false, message: '请输入网站的url', trigger: 'blur' }],

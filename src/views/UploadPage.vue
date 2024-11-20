@@ -120,6 +120,7 @@ const handleUpload = async () => {
     return;
   }
 
+  // 创建 FormData 对象并添加文件
   const formData = new FormData();
   selectedFiles.value.forEach((file) => {
     formData.append('file', file);
@@ -127,18 +128,34 @@ const handleUpload = async () => {
 
   try {
     isUploading.value = true;
+
+    // 发送 POST 请求上传文件
     const response = await axios.post('/api/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
 
-    uploadedFiles.value = response.data;
-    selectedFiles.value = [];
+    // 解构后端返回的 Result 数据
+    const { code, msg, data } = response.data;
+
+    if (code === 1) {
+      // 上传成功，解析并显示文件信息
+      const uploadedFilesData = JSON.parse(data); // 后端返回的是 JSON 字符串
+      uploadedFiles.value = uploadedFilesData;
+      message.value = msg || '文件上传成功';
+      selectedFiles.value = [];
+    } else {
+      // 上传失败，显示后端返回的错误消息
+      message.value = msg || '文件上传失败，请重试。';
+    }
   } catch (error) {
-    message.value = error.response?.data || '上传失败，请重试。';
+    // 捕获请求异常，显示错误提示
+    message.value = error.response?.data?.msg
+      ? '上传失败: ' + error.response.data.msg
+      : '上传失败，请检查网络连接或稍后重试。';
   } finally {
-    isUploading.value = false;
+    isUploading.value = false; // 无论成功或失败，均取消上传状态
   }
 };
 

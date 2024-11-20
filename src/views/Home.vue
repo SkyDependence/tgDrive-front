@@ -184,13 +184,28 @@ const resetForm = () => {
 
 const loadConfig = async () => {
   try {
+    // 发送 GET 请求加载配置
     const response = await axios.get(`/api/config/${configFilename.value}`);
-    message.value = response.data;
-    router.push('/upload');
+
+    // 解构后端返回的 Result 数据
+    const { code, msg } = response.data;
+
+    // 根据返回的 code 判断是否成功
+    if (code === 1) {
+      message.value = msg || '配置加载成功';
+      router.push('/upload'); // 成功后跳转到上传页面
+    } else {
+      // 如果 code 不为 1，表示失败，显示后端返回的错误消息
+      message.value = msg || '加载配置失败，请重试。';
+    }
   } catch (error) {
-    message.value = error.response?.data ? '加载配置失败: ' + JSON.stringify(error.response.data) : '加载配置失败，请重试。';
+    // 捕获请求异常，并显示错误提示
+    message.value = error.response?.data?.msg
+      ? '加载配置失败: ' + error.response.data.msg
+      : '加载配置失败，请检查网络连接或稍后重试。';
   }
 };
+
 
 /*
 const fetchConfig = async (name: string) => {

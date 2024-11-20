@@ -140,21 +140,36 @@ const rules = reactive<FormRules>({
 
 const handleSubmit = async () => {
   if (!ruleFormRef.value) return;
+
   ruleFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
+        // 将表单数据提交到后端
         const payload = { ...ruleForm };
         const response = await axios.post('/api/config', payload);
-        message.value = response.data;
-        Object.assign(ruleForm, {
-          name: '',
-          token: '',
-          target: '',
-          url: '',
-          pass: '',
-        });
+
+        // 解构后端返回的 Result 数据
+        const { code, msg, data } = response.data;
+
+        // 根据后端返回的 code 判断是否成功
+        if (code === 1) {
+          message.value = msg || '提交成功'; // 显示后端返回的消息
+          Object.assign(ruleForm, {
+            name: '',
+            token: '',
+            target: '',
+            url: '',
+            pass: '',
+          });
+        } else {
+          // 处理失败情况，显示后端返回的错误消息
+          message.value = msg || '提交失败，请重试。';
+        }
       } catch (error) {
-        message.value = error.response?.data ? '提交失败: ' + JSON.stringify(error.response.data) : '提交失败，请重试。';
+        // 捕获请求异常，并显示错误信息
+        message.value = error.response?.data?.msg
+          ? '提交失败: ' + error.response.data.msg
+          : '提交失败，请检查网络连接或稍后重试。';
       }
     } else {
       console.log('表单验证失败');

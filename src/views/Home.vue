@@ -71,6 +71,7 @@
       <el-input
         v-model="configFilename"
         placeholder="请输入配置文件名"
+        required="true"
         class="styled-input"
       />
       <div class="button-container">
@@ -78,13 +79,14 @@
       </div>
     </div>
 
-    <!-- 查询配置文件 -->
+    <!--
     <div class="config-section">
       <h2 class="title">查询配置文件</h2>
       <el-form @submit.prevent class="query-form">
         <el-input
           v-model="filenameInput"
           placeholder="请输入配置文件名"
+          aria-required="true"
           class="styled-input"
         />
         <div class="button-container">
@@ -92,7 +94,6 @@
         </div>
       </el-form>
 
-      <!-- 显示查询结果 -->
       <div v-if="configData && configData.length">
         <el-table :data="configData" style="width: 100%">
           <el-table-column prop="key" label="配置项" />
@@ -103,6 +104,7 @@
         <p>没有配置数据。</p>
       </div>
     </div>
+    -->
   </div>
 </template>
 
@@ -175,6 +177,7 @@ const loadConfig = async () => {
   }
 };
 
+/*
 const fetchConfig = async (name: string) => {
   if (!name) {
     alert('请输入文件名');
@@ -194,6 +197,7 @@ const fetchConfig = async (name: string) => {
     configData.value = null;
   }
 };
+*/
 
 </script>
 

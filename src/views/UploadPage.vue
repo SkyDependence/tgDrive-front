@@ -59,6 +59,7 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { da } from 'element-plus/es/locale';
 
 const router = useRouter();
 
@@ -141,8 +142,7 @@ const handleUpload = async () => {
 
     if (code === 1) {
       // 上传成功，解析并显示文件信息
-      const uploadedFilesData = JSON.parse(data); // 后端返回的是 JSON 字符串
-      uploadedFiles.value = uploadedFilesData;
+      uploadedFiles.value = data;
       message.value = msg || '文件上传成功';
       selectedFiles.value = [];
     } else {

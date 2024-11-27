@@ -153,6 +153,7 @@ const handleUpload = async () => {
           : '上传失败，请检查网络连接或稍后重试。';
       }
     }));
+    selectedFiles.value = [];
   } finally {
     isUploading.value = false; // 无论成功或失败，均取消上传状态
   }

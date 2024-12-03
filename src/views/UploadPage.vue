@@ -35,7 +35,7 @@
     </button>
 
     <div class="message-group">
-      <label for="messageInput" class="label">发送消息:</label>
+      <label for="messageInput" class="label">发送消息（用于检测配置文件中的内容是否正确连接上bot，点击发送消息后，如果bot有消息，则说明连接成功）:</label>
       <input type="text" id="messageInput" v-model="inputMessage" placeholder="输入消息..." class="input" />
     </div>
 

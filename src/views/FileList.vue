@@ -135,7 +135,7 @@ onMounted(() => {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  background-color: var(--background-color);
+  background-color: var(--container-bg-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px var(--box-shadow-color);
 }

@@ -19,7 +19,8 @@
       >
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">
-          将文件拖到此处，或 <em>点击选择文件</em>
+          将文件拖到此处，或 <em>点击选择文件</em>，
+          也可以Ctrl + v将文件粘贴上传
         </div>
       </el-upload>
 

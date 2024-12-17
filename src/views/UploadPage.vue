@@ -1,113 +1,164 @@
 <template>
-  <div id="upload-page" class="app-container" @dragover.prevent="toggleDragging(true)"
-    @dragleave.prevent="toggleDragging(false)" @drop.prevent="handleDrop" @paste.prevent="handlePaste">
-    <h1 class="title">上传页面</h1>
+  <div class="upload-page-container">
+    <el-card shadow="hover" class="upload-card">
+      <template #header>
+        <div class="card-header">
+          <h1>文件上传</h1>
+          <el-button type="primary" @click="goToFileList">文件列表</el-button>
+        </div>
+      </template>
 
-    <!-- 跳转按钮 -->
-    <div class="top-right-button">
-      <el-button type="primary" @click="goToFileList">文件列表</el-button>
-    </div>
+      <!-- File Upload Zone -->
+      <el-upload
+        class="file-uploader"
+        drag
+        multiple
+        :auto-upload="false"
+        :on-change="handleFileChange"
+        :file-list="selectedFiles"
+      >
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">
+          将文件拖到此处，或 <em>点击选择文件</em>
+        </div>
+      </el-upload>
 
-    <div class="form-group" :class="{ 'dragging': isDragging }" @click="triggerFileInput">
-      <label for="file" class="label">选择文件或拖动文件到此处:</label>
-      <input type="file" id="file" multiple @change="handleFileSelect" ref="fileInput" class="hidden-input" />
-      <div class="custom-file-input">
-        <!-- 阻止事件冒泡 -->
-        <button type="button" @click.stop="triggerFileInput">选择文件</button>
+      <!-- File List 
+      <el-card v-if="selectedFiles.length > 0" shadow="never" class="file-list-card">
+        <template #header>
+          <div class="file-list-header">
+            <span>待上传文件</span>
+            <el-button type="text" @click="clearAllFiles" icon="Delete">清空</el-button>
+          </div>
+        </template>
+        <el-scrollbar max-height="200px">
+          <el-table :data="selectedFiles" size="small">
+            <el-table-column prop="name" label="文件名" />
+            <el-table-column label="大小">
+              <template #default="scope">
+                {{ (scope.row.size / 1024).toFixed(2) }} KB
+              </template>
+            </el-table-column>
+            <el-table-column label="操作">
+              <template #default="scope">
+                <el-button 
+                  type="danger" 
+                  link 
+                  size="small" 
+                  @click="removeFile(scope.$index)"
+                >
+                  删除
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-scrollbar>
+      </el-card>\
+    -->
+
+      <!-- Upload Button -->
+      <div class="upload-actions">
+        <el-button 
+          type="primary" 
+          @click="handleUpload" 
+          :disabled="isUploading || selectedFiles.length === 0"
+          :loading="isUploading"
+        >
+          {{ isUploading ? '正在上传' : '上传文件' }}
+        </el-button>
       </div>
-    </div>
 
-    <!-- 候选框显示文件列表 -->
-    <div class="file-list" v-if="selectedFiles.length > 0">
-      <h3>待上传文件：</h3>
-      <ul>
-        <li v-for="(file, index) in selectedFiles" :key="index">
-          <span>{{ file.name }} ({{ (file.size / 1024).toFixed(2) }} KB)</span>
-          <button @click="removeFile(index)">删除</button>
-        </li>
-      </ul>
-      <button @click="clearAllFiles" class="button">清空全部文件</button>
-    </div>
+      <!-- Message Section -->
+      <el-card shadow="never" class="message-section">
+        <el-form :model="messageForm" @submit.prevent="handleSendMessage">
+          <el-form-item label="发送消息">
+            <el-input 
+              v-model="messageForm.message" 
+              placeholder="输入消息以测试Bot连接..."
+              clearable
+            >
+              <template #append>
+                <el-button 
+                  type="primary" 
+                  @click="handleSendMessage"
+                  :disabled="!messageForm.message"
+                >
+                  发送
+                </el-button>
+              </template>
+            </el-input>
+          </el-form-item>
+        </el-form>
+      </el-card>
 
-    <!-- 上传按钮，上传时禁用并显示“正在上传” -->
-    <button @click="handleUpload" class="button" :disabled="isUploading || !selectedFiles.length">
-      {{ isUploading ? '正在上传' : '上传文件' }}
-    </button>
+      <!-- Uploaded Files and Messages -->
+      <el-alert 
+        v-if="message" 
+        :title="message" 
+        type="info" 
+        show-icon 
+        class="upload-message"
+      />
 
-    <div class="message-group">
-      <label for="messageInput" class="label">发送消息（用于检测配置文件中的内容是否正确连接上bot，点击发送消息后，如果bot有消息，则说明连接成功）:</label>
-      <input type="text" id="messageInput" v-model="inputMessage" placeholder="输入消息..." class="input" />
-    </div>
-
-    <button @click="handleSendMessage" class="button" :disabled="!inputMessage">
-      发送消息
-    </button>
-
-    <div v-if="uploadedFiles.length > 0" class="message">
-      <h3> 消息：</h3>
-      <ul>
-        <li v-for="(file, index) in uploadedFiles" :key="index">
-          <span>{{ file.fileName }}: </span>
-          <a :href="file.downloadLink" target="_blank">{{ file.downloadLink }}</a>
-        </li>
-      </ul>
-    </div>
+      <el-card v-if="uploadedFiles.length > 0" shadow="never" class="uploaded-files-card">
+        <template #header>
+          <span>已上传文件</span>
+        </template>
+        <el-table :data="uploadedFiles" size="small">
+          <el-table-column prop="fileName" label="文件名" />
+          <el-table-column label="下载链接">
+            <template #default="scope">
+              <el-link 
+                type="primary" 
+                :href="scope.row.downloadLink" 
+                target="_blank"
+              >
+                {{ scope.row.downloadLink }}
+              </el-link>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+    </el-card>
   </div>
 </template>
 
-<script lang="ts" setup>
-import { ref } from 'vue';
-import axios from 'axios';
+<script setup lang="ts">
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import { da } from 'element-plus/es/locale';
+import axios from 'axios';
+import { 
+  ElMessage, 
+  UploadFile, 
+  UploadFiles, 
+  UploadRawFile
+} from 'element-plus';
+import { 
+  UploadFilled, 
+  Document, 
+  Delete 
+} from '@element-plus/icons-vue';
+import { onBeforeUnmount } from 'vue';
+import { onMounted } from 'vue';
 
 const router = useRouter();
 
-const fileInput = ref(null); // 文件输入引用
-const selectedFiles = ref([]);
-const uploadedFiles = ref([]);
-const inputMessage = ref('');
+// Reactive state
+const selectedFiles = ref<UploadFile[]>([]);
+const uploadedFiles = ref<any[]>([]);
 const message = ref('');
-const isDragging = ref(false);
 const isUploading = ref(false);
 
-const triggerFileInput = () => {
-  if (fileInput.value) fileInput.value.click(); // 触发文件选择
+const messageForm = reactive({
+  message: ''
+});
+
+// File handling methods
+const handleFileChange = (file: UploadFile, fileList: UploadFiles) => {
+  selectedFiles.value = fileList;
 };
 
-const handleFileSelect = (event) => {
-  addFiles(event.target.files);
-};
-
-const handleDrop = (event) => {
-  toggleDragging(false);
-  const files = event.dataTransfer.files;
-  if (files.length > 0) {
-    addFiles(files);
-  }
-};
-
-const handlePaste = (event) => {
-  const items = event.clipboardData.items;
-  for (let item of items) {
-    if (item.kind === 'file') {
-      addFiles([item.getAsFile()]);
-      break;
-    }
-  }
-};
-
-const toggleDragging = (state) => {
-  isDragging.value = state;
-};
-
-const addFiles = (files) => {
-  if (files.length > 0) {
-    selectedFiles.value = [...selectedFiles.value, ...Array.from(files)];
-  }
-};
-
-const removeFile = (index) => {
+const removeFile = (index: number) => {
   selectedFiles.value.splice(index, 1);
 };
 
@@ -115,9 +166,10 @@ const clearAllFiles = () => {
   selectedFiles.value = [];
 };
 
+// Upload method
 const handleUpload = async () => {
   if (selectedFiles.value.length === 0) {
-    message.value = '请先选择至少一个文件。';
+    ElMessage.warning('请先选择至少一个文件');
     return;
   }
 
@@ -125,9 +177,9 @@ const handleUpload = async () => {
 
   try {
     // 逐个异步上传文件
-    await Promise.all(selectedFiles.value.map(async (file) => {
+    await Promise.all(selectedFiles.value.map(async (uploadFile) => {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadFile.raw as File);
 
       try {
         const response = await axios.post('/api/upload', formData, {
@@ -139,170 +191,144 @@ const handleUpload = async () => {
         const { code, msg, data } = response.data;
 
         if (code === 1) {
-          // 上传成功，解析并显示文件信息
           uploadedFiles.value.push(data);
-          message.value = msg || '文件上传成功';
+          ElMessage.success(msg || '文件上传成功');
         } else {
-          // 上传失败，显示后端返回的错误消息
-          message.value = msg || '文件上传失败，请重试。';
+          ElMessage.error(msg || '文件上传失败，请重试');
         }
-      } catch (error) {
-        // 捕获请求异常，显示错误提示
-        message.value = error.response?.data?.msg
-          ? '上传失败: ' + error.response.data.msg
-          : '上传失败，请检查网络连接或稍后重试。';
+      } catch (error: any) {
+        ElMessage.error(
+          error.response?.data?.msg 
+            ? '上传失败: ' + error.response.data.msg
+            : '上传失败，请检查网络连接或稍后重试'
+        );
       }
     }));
+    
+    // 清空已选文件
     selectedFiles.value = [];
+  } catch (error) {
+    ElMessage.error('上传过程中发生错误');
   } finally {
-    isUploading.value = false; // 无论成功或失败，均取消上传状态
+    isUploading.value = false;
   }
 };
 
+// Send message method
 const handleSendMessage = async () => {
-  if (!inputMessage.value) {
-    message.value = '请先输入消息。';
+  if (!messageForm.message) {
+    ElMessage.warning('请先输入消息');
     return;
   }
 
   try {
-    await axios.post('/api/send-message', { message: inputMessage.value });
-    message.value = '消息发送成功！';
-    inputMessage.value = '';
-  } catch (error) {
-    message.value = error.response?.data || '消息发送失败，请重试。';
+    await axios.post('/api/send-message', { message: messageForm.message });
+    ElMessage.success('消息发送成功');
+    messageForm.message = '';
+  } catch (error: any) {
+    ElMessage.error(error.response?.data || '消息发送失败，请重试');
   }
 };
 
-// 跳转到文件列表页面
+// Navigation method
 const goToFileList = () => {
   router.push('/fileList');
 };
+
+const handlePaste = (event: ClipboardEvent) => {
+  // 只获取粘贴的第一个对象
+  const item = event.clipboardData?.items[0];
+  if (!item) return; // 没有内容时直接返回
+
+  // 检查第一个对象是否为文件
+  if (item.kind === 'file') {
+    const file = item.getAsFile();
+    if (file) {
+      
+      // 转换为 Element Plus 所需的 UploadFile 格式
+      const rawFile: UploadRawFile = Object.assign(file, { 
+        uid: Date.now() 
+      });
+      const uploadFile: UploadFile = {
+        name: rawFile.name,
+        size: rawFile.size,
+        uid: rawFile.uid,
+        raw: rawFile,
+        status: 'ready'
+      };
+
+      // 文件去重逻辑
+      const isDuplicate = selectedFiles.value.some(
+        existingFile => existingFile.name === uploadFile.name && existingFile.size === uploadFile.size
+      );
+
+      if (!isDuplicate) {
+        selectedFiles.value.push(uploadFile);
+        ElMessage.success(`已添加粘贴的文件: ${file.name}`);
+      } else {
+        ElMessage.warning(`文件 ${file.name} 已经存在列表中`);
+      }
+    }
+  } else {
+    console.log('粘贴的第一个对象不是文件，类型为:', item.kind, item.type);
+  }
+};
+
+
+// 组件加载时监听粘贴事件，卸载时移除
+onMounted(() => {
+  window.addEventListener('paste', handlePaste);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('paste', handlePaste);
+});
 </script>
 
 <style scoped>
-.app-container {
-  max-width: 600px;
-  margin: auto;
+.upload-page-container {
+  max-width: 800px;
+  margin: 0 auto;
   padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.title {
-  text-align: center;
-  color: #333;
-  font-size: 24px;
-}
-
-.form-group {
-  margin-top: 20px;
-  border: 2px dashed #ccc;
-  padding: 10px;
-  text-align: center;
-  border-radius: 5px;
-}
-
-.form-group.dragging {
-  border-color: #66ccff;
-  background-color: #f3f9ff;
-}
-
-.label {
-  font-weight: bold;
-  display: block;
-  margin-bottom: 10px;
-  color: #666;
-}
-
-.hidden-input {
-  visibility: hidden;
-  position: absolute;
-}
-
-.custom-file-input {
-  cursor: pointer;
-  background-color: #f8f8f8;
-  padding: 10px;
-  border-radius: 5px;
-}
-
-.custom-file-input span {
-  margin-right: 10px;
-}
-
-.custom-file-input button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.button {
+.upload-card {
   width: 100%;
-  padding: 10px;
-  border: none;
-  background-color: #5cb85c;
-  color: white;
-  font-size: 16px;
-  border-radius: 5px;
-  margin-top: 20px;
-  cursor: pointer;
 }
 
-.button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.file-list {
-  margin-top: 20px;
-}
-
-.file-list ul {
-  list-style: none;
-  padding: 0;
-}
-
-.file-list li {
+.card-header {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  align-items: center;
 }
 
-.message-group {
+
+
+.file-uploader {
+  margin-bottom: 20px;
+}
+
+.file-list-card,
+.uploaded-files-card {
+  margin: 20px 0;
+}
+
+.file-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.upload-actions {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.message-section {
   margin-top: 20px;
 }
 
-.input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-.message {
-  margin-top: 20px;
-  background-color: #f0f8ff;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #b6dfff;
-  word-break: break-word;
-  /* 让长单词或链接在需要时自动换行 */
-  overflow-wrap: break-word;
-  /* 兼容处理长单词自动换行 */
-}
-
-.message ul {
-  list-style: none;
-  padding: 0;
-}
-
-.message li {
-  padding: 5px 0;
+.upload-message {
+  margin: 20px 0;
 }
 </style>

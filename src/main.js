@@ -6,6 +6,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Upload from './views/UploadPage.vue';
 import Home from './views/Home.vue'
 import FileList from './views/FileList.vue';
+import 'element-plus/theme-chalk/dark/css-vars.css';
+import './assets/theme.css'
 
 const routes = [
     { path: '/', component: Home }, // 根路径

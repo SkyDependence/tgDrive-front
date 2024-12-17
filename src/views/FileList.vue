@@ -135,9 +135,9 @@ onMounted(() => {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  background-color: #f9f9f9;
+  background-color: var(--background-color);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--box-shadow-color);
 }
 
 .header {
@@ -149,7 +149,7 @@ onMounted(() => {
 
 .title {
   font-size: 1.8rem;
-  color: #333;
+  color: var(--text-color);
   font-weight: bold;
 }
 

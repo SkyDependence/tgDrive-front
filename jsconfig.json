@@ -1,19 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2015", // 支持 for...of 迭代器（原来是 es5，改为 es2015）
     "module": "esnext",
     "baseUrl": "./",
     "moduleResolution": "node",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "lib": [
-      "esnext",
-      "dom",
-      "dom.iterable",
+      "es2015",  // 添加 es2015 支持
+      "dom", 
+      "dom.iterable", 
       "scripthost"
-    ]
-  }
+    ],
+    "downlevelIteration": true // 关键，支持类似 for...of 语法
+  },
+  "exclude": ["node_modules"]
 }

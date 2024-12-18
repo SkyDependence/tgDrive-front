@@ -7,6 +7,7 @@ import FileList from '../views/FileList.vue';
 import Login from '../views/LoginPage.vue'; // 登录页面
 import Layout from '@/components/Layout.vue';
 import AdminLayout from '@/components/AdminLayout.vue';
+import ChangePassword from '@/views/ChangePassword.vue';
 
 const routes = [
     {
@@ -41,7 +42,14 @@ const routes = [
                 meta: {
                     requiresAuth: true,
                 }
-            }
+            },
+            {
+                path: 'changePassword',
+                component: ChangePassword,
+                meta: {
+                    requiresAuth: true,
+                }
+            },
         ]
     },
     { path: '/login', component: Login }, // 登录页面不需要登录

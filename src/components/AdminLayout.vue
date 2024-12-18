@@ -33,6 +33,10 @@
             <el-icon><Folder /></el-icon>
             <span>文件列表</span>
           </el-menu-item>
+          <el-menu-item index="/changePassword" class="menu-item">
+            <el-icon><EditPen /></el-icon>
+            <span>修改密码</span>
+          </el-menu-item>
           <el-menu-item index="/" class="menu-item">
             <el-icon><Top /></el-icon>
             <span>上传文件</span>

@@ -337,7 +337,7 @@ const loadConfig = async () => {
 .load-config-section {
   background-color: var(--container-bg-color);
   border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px var(--box-shadow-color);
   padding: 2rem;
 }
 
@@ -359,12 +359,12 @@ const loadConfig = async () => {
 }
 
 .message-box.success {
-  background-color: #f0f9eb;
+  background-color: var(--container-bg-color);
   color: #67c23a;
 }
 
 .message-box.error {
-  background-color: #fef0f0;
+  background-color: var(--container-bg-color);
   color: #f56c6c;
 }
 

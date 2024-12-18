@@ -1,15 +1,7 @@
 <template>
   <div id="app">
     <router-view></router-view> <!-- 显示路由匹配的页面组件 -->
-    <header>
-      <el-switch 
-        v-model="isDarkMode"
-        active-text="暗色模式"
-        inactive-text="亮色模式"
-        @change="toggleTheme"
-      />
-    </header>
-  </div>
+ </div>
 </template>
 
 <script setup>

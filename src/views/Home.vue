@@ -3,7 +3,7 @@
     <div class="form-wrapper">
       <div class="form-header">
         <h1>配置设置</h1>
-        <p>设置您的Telegram机器人</p>
+        <p>设置您的Telegram bot</p>
       </div>
 
       <el-form
@@ -27,10 +27,10 @@
             </el-input>
           </el-form-item>
 
-          <el-form-item label="机器人令牌" prop="token">
+          <el-form-item label="bot token" prop="token">
             <el-input 
               v-model="ruleForm.token" 
-              placeholder="请输入Telegram机器人令牌" 
+              placeholder="请输入Telegram bot token" 
               clearable
             >
               <template #prefix>
@@ -39,10 +39,10 @@
             </el-input>
           </el-form-item>
 
-          <el-form-item label="聊天ID" prop="target">
+          <el-form-item label="Chat ID" prop="target">
             <el-input 
               v-model="ruleForm.target" 
-              placeholder="请输入聊天ID" 
+              placeholder="请输入Chat ID" 
               clearable
             >
               <template #prefix>
@@ -51,10 +51,10 @@
             </el-input>
           </el-form-item>
 
-          <el-form-item label="网址（可选）" prop="url">
+          <el-form-item label="URL（选填）" prop="url">
             <el-input 
               v-model="ruleForm.url" 
-              placeholder="请输入网址" 
+              placeholder="请输入URL" 
               clearable
             >
               <template #prefix>
@@ -63,11 +63,11 @@
             </el-input>
           </el-form-item>
 
-          <el-form-item label="密码（可选）" prop="pass">
+          <el-form-item label="密码（选填）" prop="pass">
             <el-input 
               v-model="ruleForm.pass" 
               type="password" 
-              placeholder="请输入下载密码" 
+              placeholder="请输入密码" 
               show-password
               clearable
             >
@@ -247,7 +247,7 @@ const loadConfig = async () => {
     if (code === 1) {
       messageType.value = 'success';
       message.value = msg || '配置加载成功';
-      router.push('/upload');
+      router.push('/');
     } else {
       messageType.value = 'error';
       message.value = msg || '加载配置失败';
@@ -265,12 +265,12 @@ const loadConfig = async () => {
 .config-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.5rem;
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
   background: var(--background-color);
-  min-height: 100vh;
+  min-height: 85vh;
 }
 
 .form-wrapper {
@@ -283,13 +283,13 @@ const loadConfig = async () => {
 
 .form-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .form-header h1 {
   color: var(--text-color);
   font-size: 2rem;
-  margin-bottom: 0.5rem;
+  margin: 0.5rem;
 }
 
 .form-header p {
@@ -301,7 +301,7 @@ const loadConfig = async () => {
   display: flex;
   flex-direction: column;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.2rem;
 }
 
 .config-form .el-form-item {

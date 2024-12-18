@@ -1,26 +1,21 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import { createRouter, createWebHistory } from 'vue-router';
-
-// 导入您的路由页面
-import Upload from './views/UploadPage.vue';
-import Home from './views/Home.vue'
-import FileList from './views/FileList.vue';
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './routers'; // 引入router
+import ElementPlus from 'element-plus' 
+import 'element-plus/dist/index.css'   
 import 'element-plus/theme-chalk/dark/css-vars.css';
-import './assets/theme.css'
+import './assets/theme.css';
 
-const routes = [
-    { path: '/', component: Home }, // 根路径
-    { path: '/upload', component: Upload },
-    { path: '/fileList', component: FileList },
-    // 其他路由
-];
+const app = createApp(App)
 
-const router = createRouter({
-    history: createWebHistory(),
-    routes,
-});
+app.use(ElementPlus, {
+  // Element Plus 的全局配置
+  message: {
+    position: 'top-center',
+    duration: 2000,
+    zIndex: 20000
+  }
+})
 
-createApp(App)
-    .use(router)
-    .mount('#app')
+app.use(router)
+app.mount('#app')

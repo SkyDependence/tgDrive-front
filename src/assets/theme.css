@@ -1,15 +1,21 @@
 /* 亮色主题变量 */
 :root {
-  --background-color: linear-gradient(135deg, #f6f8f9 0%, #e5ebee 100%);
-  --container-bg-color: #ffffff;
-  --box-shadow-color: rgba(0, 0, 0, 0.1);
-  --text-color: #333333;
+  --background-color: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  --container-bg-color: rgba(255, 255, 255, 0.95);
+  --box-shadow-color: rgba(0, 0, 0, 0.08);
+  --text-color: #1e293b;
+  --hover-bg-color: rgba(0, 0, 0, 0.04);
+  --active-menu-bg: rgba(64, 158, 255, 0.1);
+  --active-menu-color: #409EFF;
 }
 
 /* 暗色主题变量 */
 html.dark {
-  --background-color: linear-gradient(135deg, #1e1e2e 0%, #2b2b3b 100%);
-  --container-bg-color: #2f2f2f;
-  --box-shadow-color: rgba(0, 0, 0, 0.3);
-  --text-color: #eeeeee;
+  --background-color: rgb(41, 41, 41);
+  --container-bg-color: rgba(47, 47, 47, 0.95);
+  --box-shadow-color: rgba(0, 0, 0, 0.2);
+  --text-color: #e2e8f0;
+  --hover-bg-color: rgba(255, 255, 255, 0.05);
+  --active-menu-bg: rgba(64, 158, 255, 0.15);
+  --active-menu-color: #60a5fa;
 }

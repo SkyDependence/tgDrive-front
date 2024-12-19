@@ -107,15 +107,34 @@
         </template>
         <el-table :data="uploadedFiles" size="small">
           <el-table-column prop="fileName" label="文件名" />
-          <el-table-column label="下载链接">
+          <el-table-column label="操作">
             <template #default="scope">
-              <el-link 
+              <!-- 复制 Markdown 按钮 -->
+              <el-button 
                 type="primary" 
-                :href="scope.row.downloadLink" 
-                target="_blank"
+                size="small" 
+                @click="copyMarkdown(scope.row)"
               >
-                {{ scope.row.downloadLink }}
-              </el-link>
+                复制Markdown
+              </el-button>
+
+              <!-- 复制链接按钮 -->
+              <el-button 
+                type="success" 
+                size="small" 
+                @click="copyLink(scope.row)"
+              >
+                复制链接
+              </el-button>
+
+              <!-- 直接跳转下载按钮 -->
+              <el-button 
+                type="warning" 
+                size="small" 
+                @click="openLink(scope.row.downloadLink)"
+              >
+                直接下载
+              </el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -275,6 +294,34 @@ const handlePaste = (event: ClipboardEvent) => {
   }
 };
 
+// 复制 Markdown 按钮的逻辑
+const copyMarkdown = (row: any) => {
+  const markdownText = `![${row.fileName}](${row.downloadLink})`;
+  copyToClipboard(markdownText);
+  ElMessage.success('Markdown 格式已复制到剪贴板');
+};
+
+// 复制链接按钮的逻辑
+const copyLink = (row: any) => {
+  const link = row.downloadLink;
+  copyToClipboard(link);
+  ElMessage.success('下载链接已复制到剪贴板');
+};
+
+// 直接下载按钮的逻辑
+const openLink = (url: string) => {
+  window.open(url, '_blank');
+};
+
+// 复制到剪贴板的通用方法
+const copyToClipboard = (text: string) => {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+};
 
 // 组件加载时监听粘贴事件，卸载时移除
 onMounted(() => {

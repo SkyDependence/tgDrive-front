@@ -287,7 +287,6 @@ const loadConfig = async () => {
 
     if (code === 1) {
       ElMessage.success(msg || '配置加载成功');
-      router.push('/');
     } else {
       ElMessage.error(msg || '加载配置失败');
     }

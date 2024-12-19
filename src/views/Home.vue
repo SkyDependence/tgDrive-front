@@ -106,42 +106,70 @@
 
     <div class="load-config-section">
       <h2>加载现有配置</h2>
-      <div class="load-config-input">
-        <el-input 
-          v-model="configFilename" 
-          placeholder="请输入配置名称" 
-          clearable
-        >
-          <template #prefix>
-            <el-icon><Folder /></el-icon>
-          </template>
-        </el-input>
-        <el-button 
-          type="primary" 
-          @click="loadConfig" 
-          class="load-btn"
-          :loading="isLoading"
-        >
-          加载配置
-        </el-button>
+      <div class="load-config-wrapper">
+        <div class="load-config-input">
+          <el-select 
+            v-model="selectedConfig" 
+            placeholder="请选择配置文件" 
+            class="config-select" 
+            :loading="isLoadingConfigs"
+            @change="handleConfigSelect"
+          >
+            <el-option
+              v-for="config in configList"
+              :key="config.name"
+              :label="config.name"
+              :value="config.name"
+            />
+          </el-select>
+          <el-button 
+            type="primary" 
+            @click="loadConfig" 
+            class="load-btn"
+            :loading="isLoading"
+            :disabled="!selectedConfig"
+          >
+            加载配置
+          </el-button>
+        </div>
+
+        <!-- 配置预览部分 -->
+        <div v-if="selectedConfigData" class="config-preview">
+          <h3>配置预览</h3>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="配置名称">{{ selectedConfigData.name }}</el-descriptions-item>
+            <el-descriptions-item label="Bot Token">{{ selectedConfigData.token }}</el-descriptions-item>
+            <el-descriptions-item label="Chat ID">{{ selectedConfigData.target }}</el-descriptions-item>
+            <el-descriptions-item label="URL" v-if="selectedConfigData.url">{{ selectedConfigData.url }}</el-descriptions-item>
+            <el-descriptions-item label="密码" v-if="selectedConfigData.pass">******</el-descriptions-item>
+          </el-descriptions>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
-import axios from 'axios';
+import { reactive, ref, onMounted } from 'vue';
+import request from '../utils/request'
 import { useRouter } from 'vue-router';
 import type { FormInstance, FormRules } from 'element-plus';
-import { 
-  Document, 
-  Key, 
-  ChatDotRound, 
-  Link, 
-  Lock, 
-  Folder 
+import {
+  Document,
+  Key,
+  ChatDotRound,
+  Link,
+  Lock,
+  Folder
 } from '@element-plus/icons-vue';
+
+interface ConfigForm {
+  name: string;
+  token: string;
+  target: string;
+  url?: string;
+  pass?: string;
+}
 
 const ruleFormRef = ref<FormInstance>();
 const router = useRouter();
@@ -158,29 +186,58 @@ const ruleForm = reactive({
 // 加载和消息状态
 const isSubmitting = ref(false);
 const isLoading = ref(false);
+const isLoadingConfigs = ref(false);
 const message = ref('');
 const messageType = ref('success');
 
-const configFilename = ref('');
+// 配置文件列表
+const configList = ref<ConfigForm[]>([]);
+const selectedConfig = ref('');
+const selectedConfigData = ref<ConfigForm | null>(null);
 
 // 表单验证规则
 const rules = reactive<FormRules>({
-  name: [{ 
-    required: true, 
-    message: '请输入配置文件名称', 
-    trigger: 'blur' 
+  name: [{
+    required: true,
+    message: '请输入配置文件名称',
+    trigger: 'blur'
   }],
-  token: [{ 
-    required: true, 
-    message: '请输入Telegram机器人令牌', 
-    trigger: 'blur' 
+  token: [{
+    required: true,
+    message: '请输入Telegram机器人令牌',
+    trigger: 'blur'
   }],
-  target: [{ 
-    required: true, 
-    message: '请输入聊天ID', 
-    trigger: 'blur' 
+  target: [{
+    required: true,
+    message: '请输入聊天ID',
+    trigger: 'blur'
   }],
 });
+
+// 获取配置文件列表
+const fetchConfigList = async () => {
+  isLoadingConfigs.value = true;
+  try {
+    const response = await request.get('/config/configs');
+    const { code, data } = response.data;
+
+    if (code === 1 && Array.isArray(data)) {
+      configList.value = data;
+    } else {
+      message.value = '获取配置列表失败';
+      messageType.value = 'error';
+    }
+  } catch (error) {
+    message.value = '获取配置列表失败，请检查网络';
+    messageType.value = 'error';
+  }
+  isLoadingConfigs.value = false;
+};
+
+// 处理配置选择
+const handleConfigSelect = (configName: string) => {
+  selectedConfigData.value = configList.value.find(config => config.name === configName) || null;
+};
 
 // 提交表单处理器
 const handleSubmit = async () => {
@@ -193,7 +250,7 @@ const handleSubmit = async () => {
     if (valid) {
       try {
         const payload = { ...ruleForm };
-        const response = await axios.post('/api/config', payload);
+        const response = await request.post('/config', payload);
 
         const { code, msg } = response.data;
 
@@ -201,15 +258,16 @@ const handleSubmit = async () => {
           messageType.value = 'success';
           message.value = msg || '配置提交成功';
           
-          // 提交成功后重置表单
+          // 提交成功后重置表单并刷新配置列表
           ruleFormRef.value.resetFields();
+          fetchConfigList();
         } else {
           messageType.value = 'error';
           message.value = msg || '提交失败，请重试';
         }
       } catch (error) {
         messageType.value = 'error';
-        message.value = error.response?.data?.msg 
+        message.value = error.response?.data?.msg
           ? '提交失败: ' + error.response.data.msg
           : '提交失败，请检查网络连接';
       }
@@ -231,8 +289,8 @@ const resetForm = () => {
 
 // 加载配置处理器
 const loadConfig = async () => {
-  if (!configFilename.value) {
-    message.value = '请输入配置名称';
+  if (!selectedConfig.value) {
+    message.value = '请选择配置文件';
     messageType.value = 'error';
     return;
   }
@@ -241,7 +299,7 @@ const loadConfig = async () => {
   message.value = '';
 
   try {
-    const response = await axios.get(`/api/config/${configFilename.value}`);
+    const response = await request.get(`/config/${selectedConfig.value}`);
     const { code, msg } = response.data;
 
     if (code === 1) {
@@ -259,6 +317,11 @@ const loadConfig = async () => {
 
   isLoading.value = false;
 };
+
+// 组件挂载时获取配置列表
+onMounted(() => {
+  fetchConfigList();
+});
 </script>
 
 <style scoped>
@@ -305,8 +368,8 @@ const loadConfig = async () => {
 }
 
 .config-form .el-form-item {
-  width: 100%; /* 占满父容器 */
-  box-sizing: border-box; /* 包括内边距和边框 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-actions {
@@ -316,7 +379,8 @@ const loadConfig = async () => {
   margin-top: 2rem;
 }
 
-.submit-btn, .reset-btn {
+.submit-btn,
+.reset-btn {
   width: 200px;
   padding: 12px;
   font-size: 1rem;
@@ -341,13 +405,34 @@ const loadConfig = async () => {
   padding: 2rem;
 }
 
+.load-config-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .load-config-input {
   display: flex;
   gap: 1rem;
 }
 
+.config-select {
+  flex: 1;
+}
+
 .load-btn {
   width: 250px;
+}
+
+.config-preview {
+  background-color: var(--background-color);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.config-preview h3 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
 }
 
 .message-box {
@@ -374,7 +459,8 @@ const loadConfig = async () => {
     padding: 1rem;
   }
 
-  .form-wrapper, .load-config-section {
+  .form-wrapper,
+  .load-config-section {
     padding: 1.5rem;
   }
 
@@ -386,12 +472,18 @@ const loadConfig = async () => {
     flex-direction: column;
   }
 
-  .submit-btn, .reset-btn, .load-btn {
+  .submit-btn,
+  .reset-btn,
+  .load-btn {
     width: 100%;
   }
 
   .load-config-input {
     flex-direction: column;
+  }
+
+  .config-select {
+    width: 100%;
   }
 }
 

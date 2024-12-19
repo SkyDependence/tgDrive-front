@@ -24,26 +24,15 @@
     </el-table>
 
     <!-- 分页控件 -->
-    <el-pagination
-      v-if="totalItems > 0"
-      :current-page="currentPage"
-      :page-size="pageSize"
-      :total="totalItems"
-      layout="total, sizes, prev, pager, next, jumper"
-      @size-change="handleSizeChange"
-      @current-change="handlePageChange"
-    />
+    <el-pagination v-if="totalItems > 0" :current-page="currentPage" :page-size="pageSize" :total="totalItems"
+      layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange"
+      @current-change="handlePageChange" />
 
     <!-- 更新URL确认对话框 -->
-    <el-dialog
-      title="警告"
-      v-model="isDialogVisible"
-      width="30%"
-      center
-    >
+    <el-dialog title="警告" v-model="isDialogVisible" width="30%" center>
       <p>更新URL是更新数据库中的网址前缀，也就是更新外链的网址，适用于更换了域名后，直接访问文件列表中的URL，请求不能到达服务器的情况。</p>
       <p class="dialog-footer">是否更新URL？</p>
-      <span slot="footer" class="dialog-footer" >
+      <span slot="footer" class="dialog-footer">
         <el-button @click="isDialogVisible = false">否</el-button>
         <el-button type="primary" @click="confirmUpdate">是</el-button>
       </span>
@@ -53,7 +42,8 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import request from '../utils/request'
+import { ElMessage } from 'element-plus';
 
 // 定义状态变量
 const fileList = ref([]); // 初始化 fileList 为一个空数组
@@ -67,8 +57,8 @@ const isDialogVisible = ref(false); // 控制对话框显示状态
 const fetchFileList = async () => {
   loading.value = true;
   try {
-    const response = await axios.get(`/api/fileList?page=${currentPage.value}&size=${pageSize.value}`);
-    
+    const response = await request.get(`/fileList?page=${currentPage.value}&size=${pageSize.value}`);
+
     // 检查返回结果并提取数据
     if (response.data && response.data.code === 1) { // code === 1 表示成功
       const pageResult = response.data.data; // 提取 data 字段中的分页数据
@@ -97,12 +87,20 @@ const openUpdateDialog = () => {
 // 确认更新
 const confirmUpdate = async () => {
   try {
-    const response = await axios.put('/api/file-url');
+    const response = await request.put('/file-url');
     if (response.data && response.data.code === 1) {
       console.log('URL更新成功');
+      ElMessage({
+        message: 'URL更新成功',
+        type: 'success',
+      })
       fetchFileList(); // 更新文件列表
     } else {
       console.error('URL更新失败:', response.data.msg || '未知错误');
+      ElMessage({
+        message: 'URL更新失败:' + response.data.msg || '未知错误',
+        type: 'error'
+      })
     }
   } catch (error) {
     console.error('更新URL失败:', error);
@@ -155,10 +153,14 @@ onMounted(() => {
 
 .dialog-footer {
   display: flex;
-  flex-direction:row;   /* 垂直排列子元素 */
-  align-items: center;      /* 水平居中 */
-  justify-content: center;  /* 垂直居中 */
-  height: 100%;             /* 让容器高度充满 */
+  flex-direction: row;
+  /* 垂直排列子元素 */
+  align-items: center;
+  /* 水平居中 */
+  justify-content: center;
+  /* 垂直居中 */
+  height: 100%;
+  /* 让容器高度充满 */
   text-align: center;
 }
 </style>

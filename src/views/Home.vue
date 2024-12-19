@@ -96,12 +96,6 @@
           </el-button>
         </div>
       </el-form>
-
-      <transition name="fade">
-        <div v-if="message" class="message-box" :class="messageType">
-          {{ message }}
-        </div>
-      </transition>
     </div>
 
     <div class="load-config-section">
@@ -154,6 +148,7 @@ import { reactive, ref, onMounted } from 'vue';
 import request from '../utils/request'
 import { useRouter } from 'vue-router';
 import type { FormInstance, FormRules } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import {
   Document,
   Key,
@@ -183,12 +178,10 @@ const ruleForm = reactive({
   pass: '',
 });
 
-// 加载和消息状态
+// 加载状态
 const isSubmitting = ref(false);
 const isLoading = ref(false);
 const isLoadingConfigs = ref(false);
-const message = ref('');
-const messageType = ref('success');
 
 // 配置文件列表
 const configList = ref<ConfigForm[]>([]);
@@ -224,12 +217,10 @@ const fetchConfigList = async () => {
     if (code === 1 && Array.isArray(data)) {
       configList.value = data;
     } else {
-      message.value = '获取配置列表失败';
-      messageType.value = 'error';
+      ElMessage.error('获取配置列表失败');
     }
   } catch (error) {
-    message.value = '获取配置列表失败，请检查网络';
-    messageType.value = 'error';
+    ElMessage.error('获取配置列表失败，请检查网络');
   }
   isLoadingConfigs.value = false;
 };
@@ -244,7 +235,6 @@ const handleSubmit = async () => {
   if (!ruleFormRef.value) return;
 
   isSubmitting.value = true;
-  message.value = '';
 
   ruleFormRef.value.validate(async (valid) => {
     if (valid) {
@@ -255,25 +245,21 @@ const handleSubmit = async () => {
         const { code, msg } = response.data;
 
         if (code === 1) {
-          messageType.value = 'success';
-          message.value = msg || '配置提交成功';
+          ElMessage.success(msg || '配置提交成功');
           
           // 提交成功后重置表单并刷新配置列表
           ruleFormRef.value.resetFields();
           fetchConfigList();
         } else {
-          messageType.value = 'error';
-          message.value = msg || '提交失败，请重试';
+          ElMessage.error(msg || '提交失败，请重试');
         }
       } catch (error) {
-        messageType.value = 'error';
-        message.value = error.response?.data?.msg
+        ElMessage.error(error.response?.data?.msg
           ? '提交失败: ' + error.response.data.msg
-          : '提交失败，请检查网络连接';
+          : '提交失败，请检查网络连接');
       }
     } else {
-      messageType.value = 'error';
-      message.value = '请填写所有必填字段';
+      ElMessage.error('请填写所有必填字段');
     }
 
     isSubmitting.value = false;
@@ -284,35 +270,29 @@ const handleSubmit = async () => {
 const resetForm = () => {
   if (!ruleFormRef.value) return;
   ruleFormRef.value.resetFields();
-  message.value = '';
 };
 
 // 加载配置处理器
 const loadConfig = async () => {
   if (!selectedConfig.value) {
-    message.value = '请选择配置文件';
-    messageType.value = 'error';
+    ElMessage.error('请选择配置文件');
     return;
   }
 
   isLoading.value = true;
-  message.value = '';
 
   try {
     const response = await request.get(`/config/${selectedConfig.value}`);
     const { code, msg } = response.data;
 
     if (code === 1) {
-      messageType.value = 'success';
-      message.value = msg || '配置加载成功';
+      ElMessage.success(msg || '配置加载成功');
       router.push('/');
     } else {
-      messageType.value = 'error';
-      message.value = msg || '加载配置失败';
+      ElMessage.error(msg || '加载配置失败');
     }
   } catch (error) {
-    messageType.value = 'error';
-    message.value = '加载失败，请检查网络';
+    ElMessage.error('加载失败，请检查网络');
   }
 
   isLoading.value = false;
@@ -435,24 +415,6 @@ onMounted(() => {
   color: var(--text-color);
 }
 
-.message-box {
-  margin-top: 1rem;
-  padding: 1rem;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: bold;
-}
-
-.message-box.success {
-  background-color: var(--container-bg-color);
-  color: #67c23a;
-}
-
-.message-box.error {
-  background-color: var(--container-bg-color);
-  color: #f56c6c;
-}
-
 /* Responsive Design */
 @media screen and (max-width: 768px) {
   .config-container {
@@ -485,16 +447,5 @@ onMounted(() => {
   .config-select {
     width: 100%;
   }
-}
-
-/* Fade transition for message */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>

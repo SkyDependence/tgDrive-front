@@ -7,7 +7,7 @@
       </el-button>
     </div>
 
-    <el-table :data="fileList" v-loading="loading" class="custom-table" :stripe="true" :height="450">
+    <el-table :data="fileList" v-loading="loading" class="custom-table" :stripe="true" :height="460">
       <el-table-column prop="fileName" label="文件名" :width="200" :show-overflow-tooltip="true">
       </el-table-column>
       <el-table-column label="操作" :width="350" :show-overflow-tooltip="true">

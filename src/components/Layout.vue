@@ -8,14 +8,17 @@
         </el-col>
         <el-col :span="12" style="text-align: right">
           <el-space>
-						<el-button type="primary" @click="goToAdmin">管理界面</el-button>
+            <el-button type="primary" @click="goToAdmin">管理界面</el-button>
             <el-button type="primary" @click="goToLogin">登录</el-button>
-						<el-switch
-              v-model="isDarkMode"
-              active-text="暗色"
-              inactive-text="亮色"
-              @change="toggleTheme"
-            />
+            <el-tooltip effect="light" :content="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'" placement="bottom">
+              <div class="theme-switch-wrapper">
+                <el-switch v-model="isDarkMode" @change="toggleTheme" class="theme-switch" />
+                <el-icon class="theme-icon">
+                  <Sunny v-if="!isDarkMode" />
+                  <Moon v-else />
+                </el-icon>
+              </div>
+            </el-tooltip>
           </el-space>
         </el-col>
       </el-row>
@@ -76,6 +79,23 @@ initTheme()
 
 .el-header {
   padding: 0 20px;
+}
+
+.theme-switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-switch {
+  --el-switch-on-color: #409EFF;
+  --el-switch-off-color: #6b7280;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-icon {
+  font-size: 18px;
+  color: var(--text-color);
 }
 
 .el-main {

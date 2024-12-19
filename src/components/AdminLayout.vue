@@ -31,6 +31,7 @@
           class="user-avatar" 
           :size="32"
           src="https://placeholder.co/150"
+          @click="goToLogin"
         />
       </div>
     </el-header>
@@ -125,6 +126,10 @@ const detectSystemTheme = () => {
     toggleTheme()
   })
 }
+
+const goToLogin = () => {
+  router.push('/login');
+};
 
 onMounted(() => {
   // 恢复主题设置

@@ -5,49 +5,26 @@
         <h2 class="change-password-title">修改密码</h2>
       </template>
 
-      <el-form :model="passwordForm" :rules="rules" ref="passwordFormRef" label-position="top" @keyup.enter="changePassword">
+      <el-form :model="passwordForm" :rules="rules" ref="passwordFormRef" label-position="top"
+        @keyup.enter="changePassword">
         <el-form-item label="旧密码" prop="oldPassword">
-          <el-input
-            v-model="passwordForm.oldPassword"
-            :prefix-icon="Lock"
-            type="password"
-            placeholder="请输入旧密码"
-            show-password
-            clearable
-          />
+          <el-input v-model="passwordForm.oldPassword" :prefix-icon="Lock" type="password" placeholder="请输入旧密码"
+            show-password clearable />
         </el-form-item>
 
         <el-form-item label="新密码" prop="newPassword">
-          <el-input
-            v-model="passwordForm.newPassword"
-            :prefix-icon="Lock"
-            type="password"
-            placeholder="请输入新密码"
-            show-password
-            clearable
-          />
+          <el-input v-model="passwordForm.newPassword" :prefix-icon="Lock" type="password" placeholder="请输入新密码"
+            show-password clearable />
         </el-form-item>
 
         <el-form-item label="确认新密码" prop="confirmPassword">
-          <el-input
-            v-model="passwordForm.confirmPassword"
-            :prefix-icon="Lock"
-            type="password"
-            placeholder="请再次输入新密码"
-            show-password
-            clearable
-          />
+          <el-input v-model="passwordForm.confirmPassword" :prefix-icon="Lock" type="password" placeholder="请再次输入新密码"
+            show-password clearable />
         </el-form-item>
 
         <el-form-item>
-          <el-button
-            type="primary"
-            @click="changePassword"
-            :loading="loading"
-            class="change-password-button"
-            round
-            block
-          >
+          <el-button type="primary" @click="changePassword" :loading="loading" class="change-password-button" round
+            block>
             {{ loading ? '修改中...' : '修改密码' }}
           </el-button>
         </el-form-item>
@@ -138,7 +115,7 @@ const showMessage = (message, type = 'info') => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: var(--background-color);
+  background: var(--container-bg-color);
 }
 
 .change-password-card {

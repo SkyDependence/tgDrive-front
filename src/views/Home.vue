@@ -248,12 +248,14 @@ const handleSubmit = async () => {
           ElMessage.success(msg || '配置提交成功');
           
           // 提交成功后重置表单并刷新配置列表
-          ruleFormRef.value.resetFields();
+          if (ruleFormRef.value) {
+            ruleFormRef.value.resetFields();
+          }
           fetchConfigList();
         } else {
           ElMessage.error(msg || '提交失败，请重试');
         }
-      } catch (error) {
+      } catch (error: any) {
         ElMessage.error(error.response?.data?.msg
           ? '提交失败: ' + error.response.data.msg
           : '提交失败，请检查网络连接');

@@ -3,6 +3,7 @@
     "target": "es2015", // 支持 for...of 迭代器（原来是 es5，改为 es2015）
     "module": "esnext",
     "baseUrl": "./",
+    "types": ["element-plus/global"],
     "moduleResolution": "node",
     "paths": {
       "@/*": ["src/*"]

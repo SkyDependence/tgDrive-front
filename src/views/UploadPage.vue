@@ -24,38 +24,33 @@
         </div>
       </el-upload>
 
-      <!-- File List 
-      <el-card v-if="selectedFiles.length > 0" shadow="never" class="file-list-card">
-        <template #header>
-          <div class="file-list-header">
-            <span>待上传文件</span>
-            <el-button type="text" @click="clearAllFiles" icon="Delete">清空</el-button>
+      <!-- Upload Progress Section - 在所有上传完成后自动隐藏 -->
+      <div v-if="uploading && uploadProgress.length > 0" class="upload-progress-container">
+        <div class="upload-status-message">
+          <el-alert
+            type="info"
+            :closable="false"
+            show-icon
+          >
+            <template #title>
+              文件已上传到服务器，正在等待服务器处理...
+            </template>
+            <template #default>
+              <p>注意：文件上传分两个阶段，当进度条达到100%时，还需等待服务器将文件转发到最终存储位置。</p>
+            </template>
+          </el-alert>
+        </div>
+        <div v-for="(file, index) in uploadProgress" :key="index" class="file-progress-item">
+          <div class="file-info">
+            <span class="file-name">{{ file.name }}</span>
+            <span class="progress-percentage">{{ file.percentage.toFixed(0) }}%</span>
           </div>
-        </template>
-        <el-scrollbar max-height="200px">
-          <el-table :data="selectedFiles" size="small">
-            <el-table-column prop="name" label="文件名" />
-            <el-table-column label="大小">
-              <template #default="scope">
-                {{ (scope.row.size / 1024).toFixed(2) }} KB
-              </template>
-            </el-table-column>
-            <el-table-column label="操作">
-              <template #default="scope">
-                <el-button 
-                  type="danger" 
-                  link 
-                  size="small" 
-                  @click="removeFile(scope.$index)"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-scrollbar>
-      </el-card>\
-    -->
+          <el-progress 
+            :percentage="file.percentage" 
+            :status="file.status === 'success' ? 'success' : file.status === 'error' ? 'exception' : ''"
+          />
+        </div>
+      </div>
 
       <!-- Upload Button -->
       <div class="upload-actions">
@@ -168,6 +163,16 @@ const selectedFiles = ref<UploadFile[]>([]);
 const uploadedFiles = ref<any[]>([]);
 const message = ref('');
 const isUploading = ref(false);
+const uploading = ref(false);
+
+// 上传进度状态
+interface ProgressItem {
+  name: string;
+  percentage: number;
+  status: 'progress' | 'success' | 'error';
+}
+
+const uploadProgress = ref<ProgressItem[]>([]);
 
 const messageForm = reactive({
   message: ''
@@ -194,10 +199,18 @@ const handleUpload = async () => {
   }
 
   isUploading.value = true;
+  uploading.value = true;
+  
+  // 初始化进度状态
+  uploadProgress.value = selectedFiles.value.map(file => ({
+    name: file.name,
+    percentage: 0,
+    status: 'progress' as const
+  }));
 
   try {
     // 逐个异步上传文件
-    await Promise.all(selectedFiles.value.map(async (uploadFile) => {
+    await Promise.all(selectedFiles.value.map(async (uploadFile, index) => {
       const formData = new FormData();
       formData.append('file', uploadFile.raw as File);
 
@@ -206,6 +219,18 @@ const handleUpload = async () => {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          // 添加上传进度事件处理
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentage = (progressEvent.loaded / progressEvent.total) * 100;
+              uploadProgress.value[index].percentage = percentage;
+              
+              // 当进度达到100%时，将状态设为success
+              if (percentage >= 100) {
+                uploadProgress.value[index].status = 'success';
+              }
+            }
+          }
         });
 
         const { code, msg, data } = response.data;
@@ -213,10 +238,13 @@ const handleUpload = async () => {
         if (code === 1) {
           uploadedFiles.value.push(data);
           ElMessage.success(msg || '文件上传成功');
+          uploadProgress.value[index].status = 'success';
         } else {
           ElMessage.error(msg || '文件上传失败，请重试');
+          uploadProgress.value[index].status = 'error';
         }
       } catch (error: any) {
+        uploadProgress.value[index].status = 'error';
         ElMessage.error(
           error.response?.data?.msg 
             ? '上传失败: ' + error.response.data.msg
@@ -227,6 +255,13 @@ const handleUpload = async () => {
     
     // 清空已选文件
     selectedFiles.value = [];
+    
+    // 所有文件上传完成后，设置一个延时清空进度条
+    setTimeout(() => {
+      uploading.value = false;
+      uploadProgress.value = [];
+    }, 3000); // 3秒后隐藏进度条，给用户时间看到成功状态
+    
   } catch (error) {
     ElMessage.error('上传过程中发生错误');
   } finally {
@@ -350,8 +385,6 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
-
-
 .file-uploader {
   margin-bottom: 20px;
 }
@@ -378,5 +411,64 @@ onBeforeUnmount(() => {
 
 .upload-message {
   margin: 20px 0;
+}
+
+/* 上传进度相关样式 - 使用CSS变量适配暗色主题 */
+.upload-progress-container {
+  margin: 20px 0;
+  border: 1px solid;
+  border-color: var(--el-border-color-light, #EBEEF5);
+  border-radius: 4px;
+  padding: 10px;
+  background-color: var(--container-bg-color, rgba(255, 255, 255, 0.95));
+  color: var(--text-color, #1e293b);
+  box-shadow: 0 2px 12px 0 var(--box-shadow-color, rgba(0, 0, 0, 0.08));
+}
+
+.upload-status-message {
+  margin-bottom: 15px;
+}
+
+.file-progress-item {
+  margin-bottom: 10px;
+}
+
+.file-progress-item:last-child {
+  margin-bottom: 0;
+}
+
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.file-name {
+  font-size: 14px;
+  color: var(--text-color, #606266);
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-percentage {
+  font-size: 14px;
+  color: var(--active-menu-color, #409eff);
+  font-weight: bold;
+}
+
+/* 暗色主题下特定的样式 */
+html.dark .upload-progress-container {
+  background-color: var(--container-bg-color, rgba(47, 47, 47, 0.95));
+  border-color: rgba(84, 84, 84, 0.5);
+}
+
+html.dark .file-name {
+  color: var(--text-color, #e2e8f0);
+}
+
+html.dark .progress-percentage {
+  color: var(--active-menu-color, #60a5fa);
 }
 </style>

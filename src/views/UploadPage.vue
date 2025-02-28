@@ -24,29 +24,31 @@
         </div>
       </el-upload>
 
-      <!-- Upload Progress Section - 在所有上传完成后自动隐藏 -->
-      <div v-if="uploading && uploadProgress.length > 0" class="upload-progress-container">
-        <div class="upload-status-message">
+      <!-- Upload Progress Section -->
+      <div v-if="uploading" class="upload-progress-container">
+        <!-- 服务器状态消息 - 仅在有文件上传完成或出错时显示 -->
+        <div v-if="shouldShowStatusMessage" class="upload-status-message">
           <el-alert
-            type="info"
+            :type="uploadStatusType"
             :closable="false"
             show-icon
           >
             <template #title>
-              文件已上传到服务器，正在等待服务器处理...
+              {{ uploadStatusTitle }}
             </template>
             <template #default>
-              <p>注意：文件上传分两个阶段，当进度条达到100%时，还需等待服务器将文件转发到最终存储位置。</p>
+              <p>{{ uploadStatusMessage }}</p>
             </template>
           </el-alert>
         </div>
+        
         <div v-for="(file, index) in uploadProgress" :key="index" class="file-progress-item">
           <div class="file-info">
             <span class="file-name">{{ file.name }}</span>
-            <span class="progress-percentage">{{ file.percentage.toFixed(0) }}%</span>
           </div>
           <el-progress 
-            :percentage="file.percentage" 
+            :percentage="Number(file.percentage.toFixed(2))" 
+            :format="percentageFormatter"
             :status="file.status === 'success' ? 'success' : file.status === 'error' ? 'exception' : ''"
           />
         </div>
@@ -139,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { 
@@ -165,6 +167,11 @@ const message = ref('');
 const isUploading = ref(false);
 const uploading = ref(false);
 
+// 上传状态消息
+const uploadStatusTitle = ref('正在等待服务器处理...');
+const uploadStatusMessage = ref('文件已上传到后端服务器，现在正在等待服务器将文件转发到最终存储位置，请耐心等待。');
+const uploadStatusType = ref('info');
+
 // 上传进度状态
 interface ProgressItem {
   name: string;
@@ -173,6 +180,38 @@ interface ProgressItem {
 }
 
 const uploadProgress = ref<ProgressItem[]>([]);
+
+// 添加百分比格式化函数，保留两位小数
+const percentageFormatter = (percentage: number) => {
+  return percentage.toFixed(2) + '%';
+};
+
+// 计算属性：检查是否有文件已完成上传到前端（进度100%）
+const hasCompletedUploads = computed(() => {
+  return uploadProgress.value.some(file => file.percentage >= 100);
+});
+
+// 新增计算属性：检查是否显示状态信息
+const shouldShowStatusMessage = computed(() => {
+  // 只有在有文件100%上传完成或有错误时才显示提示
+  return hasCompletedUploads.value || uploadProgress.value.some(file => file.status === 'error');
+});
+
+// 监听已完成上传，设置上传状态消息
+const updateUploadStatusMessage = () => {
+  if (hasCompletedUploads.value) {
+    uploadStatusType.value = 'info';
+    uploadStatusTitle.value = '正在等待服务器处理...';
+    uploadStatusMessage.value = '文件已上传到后端服务器，现在正在等待服务器将文件转发到最终存储位置，请耐心等待。';
+  }
+};
+
+// 设置错误状态消息
+const setErrorStatusMessage = (errorMsg: string) => {
+  uploadStatusType.value = 'error';
+  uploadStatusTitle.value = '上传失败';
+  uploadStatusMessage.value = errorMsg || '文件上传失败，请重试。';
+};
 
 const messageForm = reactive({
   message: ''
@@ -225,9 +264,10 @@ const handleUpload = async () => {
               const percentage = (progressEvent.loaded / progressEvent.total) * 100;
               uploadProgress.value[index].percentage = percentage;
               
-              // 当进度达到100%时，将状态设为success
+              // 当进度达到100%时，将状态设为success和更新状态消息
               if (percentage >= 100) {
                 uploadProgress.value[index].status = 'success';
+                updateUploadStatusMessage();
               }
             }
           }
@@ -239,31 +279,51 @@ const handleUpload = async () => {
           uploadedFiles.value.push(data);
           ElMessage.success(msg || '文件上传成功');
           uploadProgress.value[index].status = 'success';
+          
+          // 上传成功后等待3秒，移除该文件的进度条
+          setTimeout(() => {
+            // 检查是否所有文件都上传完毕
+            const allDone = uploadProgress.value.every(file => 
+              file.status === 'success' || file.status === 'error'
+            );
+            
+            // 如果所有文件都处理完毕，则完全隐藏上传进度区域
+            if (allDone) {
+              uploading.value = false;
+              uploadProgress.value = [];
+            }
+          }, 3000);
+          
         } else {
-          ElMessage.error(msg || '文件上传失败，请重试');
+          // 显示服务器返回的错误信息
+          const errorMsg = msg || '文件上传失败，请重试';
+          ElMessage.error(errorMsg);
           uploadProgress.value[index].status = 'error';
+          
+          // 更新上传状态消息为错误信息
+          setErrorStatusMessage(errorMsg);
         }
       } catch (error: any) {
         uploadProgress.value[index].status = 'error';
-        ElMessage.error(
-          error.response?.data?.msg 
-            ? '上传失败: ' + error.response.data.msg
-            : '上传失败，请检查网络连接或稍后重试'
-        );
+        
+        // 获取错误消息
+        const errorMsg = error.response?.data?.msg 
+          ? '上传失败: ' + error.response.data.msg
+          : '上传失败，请检查网络连接或稍后重试';
+        
+        ElMessage.error(errorMsg);
+        
+        // 更新上传状态消息为错误信息
+        setErrorStatusMessage(errorMsg);
       }
     }));
     
     // 清空已选文件
     selectedFiles.value = [];
     
-    // 所有文件上传完成后，设置一个延时清空进度条
-    setTimeout(() => {
-      uploading.value = false;
-      uploadProgress.value = [];
-    }, 3000); // 3秒后隐藏进度条，给用户时间看到成功状态
-    
   } catch (error) {
     ElMessage.error('上传过程中发生错误');
+    setErrorStatusMessage('上传过程中发生错误');
   } finally {
     isUploading.value = false;
   }
@@ -281,7 +341,8 @@ const handleSendMessage = async () => {
     ElMessage.success('消息发送成功');
     messageForm.message = '';
   } catch (error: any) {
-    ElMessage.error(error.response?.data || '消息发送失败，请重试');
+    const errorMsg = error.response?.data?.msg || '消息发送失败，请重试';
+    ElMessage.error(errorMsg);
   }
 };
 
@@ -452,12 +513,6 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.progress-percentage {
-  font-size: 14px;
-  color: var(--active-menu-color, #409eff);
-  font-weight: bold;
-}
-
 /* 暗色主题下特定的样式 */
 html.dark .upload-progress-container {
   background-color: var(--container-bg-color, rgba(47, 47, 47, 0.95));
@@ -466,9 +521,5 @@ html.dark .upload-progress-container {
 
 html.dark .file-name {
   color: var(--text-color, #e2e8f0);
-}
-
-html.dark .progress-percentage {
-  color: var(--active-menu-color, #60a5fa);
 }
 </style>

@@ -11,6 +11,7 @@ import ChangePassword from '@/views/ChangePassword.vue';
 
 interface RouteMeta extends Record<string | number | symbol, unknown> {
   requiresAuth?: boolean;
+  requiredRole?: 'admin' | 'visitor';
 }
 
 const routes: Array<RouteRecordRaw> = [
@@ -21,6 +22,10 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: '',
         component: Upload,
+        meta: {
+          requiresAuth: true,
+          requiredRole: 'visitor'
+        } as RouteMeta
       },
       {
         path: 'login',
@@ -31,12 +36,17 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     component: AdminLayout,
+    meta: {
+      requiresAuth: true,
+      requiredRole: 'admin'
+    } as RouteMeta,
     children: [
       {
         path: 'home',
         component: Home,
         meta: {
           requiresAuth: true,
+          requiredRole: 'admin'
         } as RouteMeta
       },
       {
@@ -44,6 +54,7 @@ const routes: Array<RouteRecordRaw> = [
         component: FileList,
         meta: {
           requiresAuth: true,
+          requiredRole: 'admin'
         } as RouteMeta
       },
       {
@@ -51,6 +62,7 @@ const routes: Array<RouteRecordRaw> = [
         component: ChangePassword,
         meta: {
           requiresAuth: true,
+          requiredRole: 'admin'
         } as RouteMeta
       },
     ]
@@ -58,6 +70,10 @@ const routes: Array<RouteRecordRaw> = [
   { 
     path: '/login', 
     component: Login 
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
   }
 ];
 
@@ -68,11 +84,27 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('role');
+  
+  // 检查是否登录
   if (to.meta.requiresAuth && !token) {
     next('/login');
-  } else {
-    next();
+    return;
   }
+
+  // 检查角色权限
+  if (to.meta.requiredRole) {
+    if (userRole === 'admin') {
+      next();
+    } else if (userRole === 'visitor' && to.meta.requiredRole === 'visitor') {
+      next();
+    } else {
+      next('/'); // 无权限用户重定向到首页
+    }
+    return;
+  }
+
+  next();
 });
 
 export default router;

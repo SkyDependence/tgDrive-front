@@ -37,6 +37,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const isDarkMode = ref(false)
@@ -57,6 +58,14 @@ const goToLogin = () => {
 }
 
 const goToAdmin = () => {
+  const userRole = localStorage.getItem('role')
+  if (userRole === 'visitor') {
+    ElMessageBox.alert('你目前是访客，请使用管理员账号登入！', '权限提示', {
+      confirmButtonText: '确定',
+      type: 'warning'
+    })
+    return
+  }
   router.push('/home')
 }
 

@@ -61,6 +61,10 @@
               <el-icon><Top /></el-icon>
               <template #title>上传文件</template>
             </el-menu-item>
+            <el-menu-item index="/backup" class="menu-item">
+              <el-icon><Download /></el-icon>
+              <template #title>备份数据库</template>
+            </el-menu-item>
           </el-menu>
         </div>
       </el-aside>
@@ -90,7 +94,8 @@ import {
   Sunny,
   Moon,
   Expand,
-  Fold 
+  Fold,
+  Download
 } from '@element-plus/icons-vue'
 
 const router = useRouter()

@@ -8,6 +8,7 @@ import Login from '../views/LoginPage.vue';
 import Layout from '@/components/Layout.vue';
 import AdminLayout from '@/components/AdminLayout.vue';
 import ChangePassword from '@/views/ChangePassword.vue';
+import BackupPage from '@/views/BackupPage.vue';
 
 interface RouteMeta extends Record<string | number | symbol, unknown> {
   requiresAuth?: boolean;
@@ -60,6 +61,14 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'changePassword',
         component: ChangePassword,
+        meta: {
+          requiresAuth: true,
+          requiredRole: 'admin'
+        } as RouteMeta
+      },
+      {
+        path: 'backup',
+        component: BackupPage,
         meta: {
           requiresAuth: true,
           requiredRole: 'admin'

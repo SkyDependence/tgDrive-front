@@ -2,27 +2,32 @@
   <div class="file-list-container">
     <div class="header">
       <h2 class="title">文件列表</h2>
-      <el-button type="warning" :size="'small'" @click="openUpdateDialog" class="update-btn">
+      <el-button type="warning" size="default" @click="openUpdateDialog" class="update-btn">
         更新URL
       </el-button>
     </div>
 
-    <el-table :data="fileList" v-loading="loading" class="custom-table" :stripe="true" :height="460">
+    <el-table 
+      :data="fileList" 
+      v-loading="loading" 
+      class="custom-table" 
+      :stripe="true" 
+      :height="460"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="55" />
       <el-table-column prop="fileName" label="文件名" :width="200" :show-overflow-tooltip="true">
       </el-table-column>
-      <el-table-column label="操作" :width="350" :show-overflow-tooltip="true">
+      <el-table-column label="操作" :width="350">
         <template #default="scope">
-          <!-- 复制Markdown按钮 -->
           <el-button type="primary" size="small" @click="copyMarkdown(scope.row)">
             复制Markdown
           </el-button>
 
-          <!-- 复制下载链接按钮 -->
           <el-button type="success" size="small" @click="copyLink(scope.row)">
             复制链接
           </el-button>
 
-          <!-- 直接跳转下载按钮 -->
           <el-button type="warning" size="small" @click="openLink(scope.row.downloadUrl)">
             直接下载
           </el-button>
@@ -41,9 +46,27 @@
       </el-table-column>
     </el-table>
 
-    <el-pagination v-if="totalItems > 0" v-model:current-page="currentPage" v-model:page-size="pageSize"
-      :total="totalItems" :layout="'total, sizes, prev, pager, next, jumper'" @size-change="handleSizeChange"
-      @current-change="handlePageChange" class="custom-pagination" />
+    <div class="table-footer">
+      <div class="batch-actions">
+        <el-button type="primary" size="small" @click="batchCopyMarkdown" :disabled="selectedFiles.length === 0">
+          批量复制Markdown
+        </el-button>
+        <el-button type="success" size="small" @click="batchCopyLinks" :disabled="selectedFiles.length === 0">
+          批量复制链接
+        </el-button>
+      </div>
+
+      <el-pagination 
+        v-if="totalItems > 0" 
+        v-model:current-page="currentPage" 
+        v-model:page-size="pageSize"
+        :total="totalItems" 
+        :layout="'total, sizes, prev, pager, next, jumper'" 
+        @size-change="handleSizeChange"
+        @current-change="handlePageChange" 
+        class="custom-pagination" 
+      />
+    </div>
 
     <el-dialog v-model="isDialogVisible" title="警告" :width="'30%'" :center="true" class="custom-dialog">
       <div class="dialog-content">
@@ -64,7 +87,6 @@
 import { ref, onMounted } from 'vue';
 import request from '../utils/request';
 import { ElMessage } from 'element-plus';
-import type { Component } from 'vue';
 
 interface FileItem {
   fileName: string;
@@ -80,6 +102,31 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const totalItems = ref(0);
 const isDialogVisible = ref(false);
+const selectedFiles = ref<FileItem[]>([]);
+
+const handleSelectionChange = (selection: FileItem[]) => {
+  selectedFiles.value = selection;
+};
+
+const batchCopyMarkdown = () => {
+  if (selectedFiles.value.length === 0) return;
+  
+  const markdownText = selectedFiles.value
+    .map(file => `[${file.fileName}](${file.downloadUrl})`)
+    .join('\n');
+  copyToClipboard(markdownText);
+  ElMessage.success(`已复制${selectedFiles.value.length}个文件的Markdown格式`);
+};
+
+const batchCopyLinks = () => {
+  if (selectedFiles.value.length === 0) return;
+  
+  const links = selectedFiles.value
+    .map(file => file.downloadUrl)
+    .join('\n');
+  copyToClipboard(links);
+  ElMessage.success(`已复制${selectedFiles.value.length}个文件的链接`);
+};
 
 const fetchFileList = async () => {
   loading.value = true;
@@ -170,94 +217,80 @@ onMounted(() => {
 });
 </script>
 
-
 <style scoped>
 .file-list-container {
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: var(--container-bg-color);
-  border-radius: 12px;
-  box-shadow: 0 6px 16px var(--box-shadow-color);
+  height: 100%;
+  width: 100%;
+  padding: 16px;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
+  margin-bottom: 16px;
 }
 
 .title {
-  font-size: 2rem;
-  color: var(--text-color);
-  font-weight: 600;
   margin: 0;
+  font-size: 20px;
+  font-weight: 500;
 }
 
 .update-btn {
-  transition: transform 0.2s ease;
-}
-
-.update-btn:hover {
-  transform: scale(1.05);
+  margin-left: auto;
 }
 
 .custom-table {
-  margin: 1rem 0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.download-link {
-  text-decoration: none;
-  font-weight: 500;
+  margin-bottom: 16px;
 }
 
 .size-tag {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 
 .time-text {
-  color: var(--text-color);
+  font-size: 14px;
 }
 
-.custom-pagination {
-  margin-top: 2rem;
-  padding: 1rem 0;
+.table-footer {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .dialog-content {
-  text-align: center;
-  padding: 1rem;
+  margin: 16px 0;
 }
 
 .dialog-question {
-  margin-top: 1rem;
   font-weight: 500;
+  margin-top: 8px;
 }
 
 .dialog-footer {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
+/* 响应式调整 */
 @media screen and (max-width: 768px) {
-  .file-list-container {
-    margin: 1rem;
-    padding: 1rem;
+  .table-footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
-
-  .title {
-    font-size: 1.5rem;
+  
+  .custom-pagination {
+    margin-top: 16px;
   }
 }
 </style>

@@ -102,7 +102,12 @@
         <template #header>
           <span>已上传文件</span>
         </template>
-        <el-table :data="uploadedFiles" size="small">
+        <el-table 
+          :data="uploadedFiles" 
+          size="small"
+          @selection-change="handleUploadedSelectionChange"
+        >
+          <el-table-column type="selection" width="55" />
           <el-table-column prop="fileName" label="文件名" />
           <el-table-column label="操作">
             <template #default="scope">
@@ -134,7 +139,24 @@
               </el-button>
             </template>
           </el-table-column>
-        </el-table>
+      </el-table>
+      
+      <div class="batch-actions" v-if="selectedUploadedFiles.length > 0">
+        <el-button 
+          type="primary" 
+          size="small" 
+          @click="batchCopyMarkdown"
+        >
+          批量复制Markdown
+        </el-button>
+        <el-button 
+          type="success" 
+          size="small" 
+          @click="batchCopyLinks"
+        >
+          批量复制链接
+        </el-button>
+      </div>
       </el-card>
     </el-card>
   </div>
@@ -163,6 +185,7 @@ const router = useRouter();
 // Reactive state
 const selectedFiles = ref<UploadFile[]>([]);
 const uploadedFiles = ref<any[]>([]);
+const selectedUploadedFiles = ref<any[]>([]);
 const message = ref('');
 const isUploading = ref(false);
 const uploading = ref(false);
@@ -351,6 +374,38 @@ const goToFileList = () => {
   router.push('/fileList');
 };
 
+// 获取FileList选中的文件
+const getSelectedFilesFromList = async () => {
+  try {
+    const response = await axios.get('/api/get-selected-files');
+    if (response.data.code === 1) {
+      const files = response.data.data.map((file: any) => ({
+        name: file.fileName,
+        size: file.size,
+        uid: Date.now() + Math.random(),
+        raw: new File([], file.fileName, { type: 'application/octet-stream' }),
+        status: 'ready'
+      }));
+
+      // 去重逻辑
+      files.forEach((newFile: any) => {
+        const isDuplicate = selectedFiles.value.some(
+          existingFile => existingFile.name === newFile.name && existingFile.size === newFile.size
+        );
+        if (!isDuplicate) {
+          selectedFiles.value.push(newFile);
+        }
+      });
+
+      ElMessage.success(`已添加${files.length}个文件`);
+    } else {
+      ElMessage.error(response.data.msg || '获取选中文件失败');
+    }
+  } catch (error) {
+    ElMessage.error('获取选中文件失败');
+  }
+};
+
 const handlePaste = (event: ClipboardEvent) => {
   // 只获取粘贴的第一个对象
   const item = event.clipboardData?.items[0];
@@ -410,6 +465,51 @@ const openLink = (url: string) => {
 };
 
 // 复制到剪贴板的通用方法
+const handleUploadedSelectionChange = (selection: any[]) => {
+  selectedUploadedFiles.value = selection;
+};
+
+const batchCopyMarkdown = () => {
+  if (selectedUploadedFiles.value.length === 0) return;
+  
+  const markdownText = selectedUploadedFiles.value
+    .map(file => `![${file.fileName}](${file.downloadLink})`)
+    .join('\n');
+  copyToClipboard(markdownText);
+  ElMessage.success(`已复制${selectedUploadedFiles.value.length}个文件的Markdown格式`);
+};
+
+const batchCopyLinks = () => {
+  if (selectedUploadedFiles.value.length === 0) return;
+  
+  const links = selectedUploadedFiles.value
+    .map(file => file.downloadLink)
+    .join('\n');
+  copyToClipboard(links);
+  ElMessage.success(`已复制${selectedUploadedFiles.value.length}个文件的链接`);
+};
+
+const batchDeleteFiles = async () => {
+  if (selectedUploadedFiles.value.length === 0) return;
+  
+  try {
+    const fileIds = selectedUploadedFiles.value.map(file => file.fileId);
+    const response = await axios.post('/api/delete-files', { fileIds });
+    
+    if (response.data.code === 1) {
+      uploadedFiles.value = uploadedFiles.value.filter(
+        file => !fileIds.includes(file.fileId)
+      );
+      ElMessage.success(`已删除${selectedUploadedFiles.value.length}个文件`);
+      selectedUploadedFiles.value = [];
+    } else {
+      ElMessage.error(response.data.msg || '删除文件失败');
+    }
+  } catch (error) {
+    ElMessage.error('删除文件失败');
+  }
+};
+
 const copyToClipboard = (text: string) => {
   const textarea = document.createElement('textarea');
   textarea.value = text;
@@ -521,5 +621,13 @@ html.dark .upload-progress-container {
 
 html.dark .file-name {
   color: var(--text-color, #e2e8f0);
+}
+
+.batch-actions {
+  margin-top: 15px;
+}
+
+.batch-actions .el-button + .el-button {
+  margin-left: 15px;
 }
 </style>

@@ -7,6 +7,11 @@
 
       <el-form :model="passwordForm" :rules="rules" ref="passwordFormRef" label-position="top"
         @keyup.enter="changePassword">
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="passwordForm.username" :prefix-icon="User" placeholder="请输入用户名"
+            clearable />
+        </el-form-item>
+
         <el-form-item label="旧密码" prop="oldPassword">
           <el-input v-model="passwordForm.oldPassword" :prefix-icon="Lock" type="password" placeholder="请输入旧密码"
             show-password clearable />
@@ -36,10 +41,11 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Lock } from '@element-plus/icons-vue'
+import { Lock, User } from '@element-plus/icons-vue'
 import request from '../utils/request'
 
 const passwordForm = ref({
+  username: '',
   oldPassword: '',
   newPassword: '',
   confirmPassword: ''
@@ -48,6 +54,10 @@ const passwordFormRef = ref(null)
 const loading = ref(false)
 
 const rules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, message: '用户名长度至少为3个字符', trigger: 'blur' }
+  ],
   oldPassword: [
     { required: true, message: '请输入旧密码', trigger: 'blur' },
     { min: 6, message: '密码长度至少为6个字符', trigger: 'blur' }
@@ -79,13 +89,14 @@ const changePassword = () => {
     loading.value = true
     try {
       const response = await request.post('/auth/change-password', {
+        username: passwordForm.value.username,
         oldPassword: passwordForm.value.oldPassword,
         newPassword: passwordForm.value.newPassword
       })
 
       if (response.data.code === 1) {
         showMessage('密码修改成功', 'success')
-        passwordForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+        passwordForm.value = { username: '', oldPassword: '', newPassword: '', confirmPassword: '' }
       } else {
         showMessage(response.data.msg || '密码修改失败', 'error')
       }

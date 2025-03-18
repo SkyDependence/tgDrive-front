@@ -104,21 +104,20 @@ const handleBackup = async () => {
       responseType: 'blob'
     })
     
-    if (response.data.code !== 1) {
-      throw new Error(response.data.msg || '数据库备份下载失败')
-    }
-    
-    // 创建下载链接
-    const url = window.URL.createObjectURL(new Blob([response.data.data]))
+    // 直接使用响应数据创建 Blob
+    const blob = new Blob([response.data])
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.setAttribute('download', 'tgDrive.db')
     document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
     
     ElMessage.success('数据库备份下载成功')
   } catch (error) {
-    ElMessage.error(error.message)
+    ElMessage.error('下载失败：' + error.message)
   } finally {
     backupLoading.value = false
   }

@@ -1,36 +1,77 @@
 <template>
-  <div class="change-password-container">
-    <el-card class="change-password-card">
+  <div class="page-container">
+    <el-card class="content-card">
       <template #header>
-        <h2 class="change-password-title">修改密码</h2>
+        <div class="card-header">
+          <el-icon><Edit /></el-icon>
+          <span>修改密码</span>
+        </div>
       </template>
 
-      <el-form :model="passwordForm" :rules="rules" ref="passwordFormRef" label-position="top"
-        @keyup.enter="changePassword">
+      <el-form 
+        :model="passwordForm" 
+        :rules="rules" 
+        ref="passwordFormRef" 
+        label-position="top"
+        @submit.prevent="changePassword"
+        class="password-form"
+      >
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="passwordForm.username" :prefix-icon="User" placeholder="请输入用户名"
-            clearable />
+          <el-input 
+            v-model="passwordForm.username" 
+            :prefix-icon="User" 
+            placeholder="请输入您的用户名"
+            size="large"
+            clearable 
+          />
         </el-form-item>
 
         <el-form-item label="旧密码" prop="oldPassword">
-          <el-input v-model="passwordForm.oldPassword" :prefix-icon="Lock" type="password" placeholder="请输入旧密码"
-            show-password clearable />
+          <el-input 
+            v-model="passwordForm.oldPassword" 
+            :prefix-icon="Lock" 
+            type="password" 
+            placeholder="请输入您的当前密码"
+            size="large"
+            show-password 
+            clearable 
+          />
         </el-form-item>
 
         <el-form-item label="新密码" prop="newPassword">
-          <el-input v-model="passwordForm.newPassword" :prefix-icon="Lock" type="password" placeholder="请输入新密码"
-            show-password clearable />
+          <el-input 
+            v-model="passwordForm.newPassword" 
+            :prefix-icon="Lock" 
+            type="password" 
+            placeholder="请输入 6-16 位的新密码"
+            size="large"
+            show-password 
+            clearable 
+          />
         </el-form-item>
 
         <el-form-item label="确认新密码" prop="confirmPassword">
-          <el-input v-model="passwordForm.confirmPassword" :prefix-icon="Lock" type="password" placeholder="请再次输入新密码"
-            show-password clearable />
+          <el-input 
+            v-model="passwordForm.confirmPassword" 
+            :prefix-icon="CircleCheck" 
+            type="password" 
+            placeholder="请再次输入新密码"
+            size="large"
+            show-password 
+            clearable 
+          />
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="changePassword" :loading="loading" class="change-password-button" round
-            block>
-            {{ loading ? '修改中...' : '修改密码' }}
+          <el-button 
+            type="primary" 
+            @click="changePassword" 
+            :loading="loading" 
+            class="submit-button"
+            size="large"
+            block
+          >
+            {{ loading ? '正在提交...' : '确认修改' }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -38,10 +79,10 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Lock, User } from '@element-plus/icons-vue'
+<script setup lang="ts">
+import { ref, reactive } from 'vue'
+import { ElMessage, FormInstance, FormRules } from 'element-plus'
+import { Lock, User, Edit, CircleCheck } from '@element-plus/icons-vue'
 import request from '../utils/request'
 
 const passwordForm = ref({
@@ -50,40 +91,37 @@ const passwordForm = ref({
   newPassword: '',
   confirmPassword: ''
 })
-const passwordFormRef = ref(null)
+const passwordFormRef = ref<FormInstance>()
 const loading = ref(false)
 
-const rules = {
+const validatePass = (rule: any, value: any, callback: any) => {
+  if (value === '') {
+    callback(new Error('请再次输入新密码'))
+  } else if (value !== passwordForm.value.newPassword) {
+    callback(new Error("两次输入的密码不一致"))
+  } else {
+    callback()
+  }
+}
+
+const rules = reactive<FormRules>({
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, message: '用户名长度至少为3个字符', trigger: 'blur' }
   ],
   oldPassword: [
     { required: true, message: '请输入旧密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为6个字符', trigger: 'blur' }
   ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为6个字符', trigger: 'blur' }
+    { min: 6, max: 16, message: '密码长度应为 6 到 16 个字符', trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请再次输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为6个字符', trigger: 'blur' },
-    {
-      validator: (rule, value, callback) => {
-        if (value !== passwordForm.value.newPassword) {
-          callback(new Error('两次输入的密码不一致'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
+    { required: true, validator: validatePass, trigger: 'blur' }
   ]
-}
+})
 
 const changePassword = () => {
-  passwordFormRef.value.validate(async (valid) => {
+  passwordFormRef.value?.validate(async (valid) => {
     if (!valid) return
 
     loading.value = true
@@ -95,82 +133,72 @@ const changePassword = () => {
       })
 
       if (response.data.code === 1) {
-        showMessage('密码修改成功', 'success')
-        passwordForm.value = { username: '', oldPassword: '', newPassword: '', confirmPassword: '' }
+        ElMessage.success('密码修改成功')
+        passwordFormRef.value?.resetFields()
       } else {
-        showMessage(response.data.msg || '密码修改失败', 'error')
+        ElMessage.error(response.data.msg || '密码修改失败')
       }
     } catch (error) {
       console.error('修改密码失败', error)
-      showMessage('修改密码失败：' + error.message, 'error')
+      ElMessage.error('修改密码失败，请检查网络或联系管理员')
     } finally {
       loading.value = false
     }
   })
 }
-
-const showMessage = (message, type = 'info') => {
-  ElMessage({
-    message,
-    type,
-    position: 'top-center',
-    duration: 2000,
-    zIndex: 20000
-  })
-}
 </script>
 
 <style scoped>
-.change-password-container {
-  min-height: 100vh;
+.page-container {
+  padding: 20px;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+}
+
+.content-card {
+  width: 100%;
+  max-width: 600px;
+}
+
+.card-header {
+  display: flex;
   align-items: center;
-  background: var(--container-bg-color);
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 500;
 }
 
-.change-password-card {
-  width: 420px;
-  backdrop-filter: blur(10px);
-  background: var(--container-bg-color);
-  border: none;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px var(--box-shadow-color);
-  transition: all 0.3s ease;
+.password-form {
+  margin-top: 20px;
 }
 
-.change-password-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 28px var(--box-shadow-color);
+.submit-button {
+  width: 100%;
+  margin-top: 10px;
 }
 
-.change-password-title {
-  text-align: center;
-  color: var(--text-color);
-  font-size: 24px;
-  margin: 0;
-  padding: 10px 0;
-}
+/* Responsive styles for ChangePassword.vue */
+@media (max-width: 767px) { /* Mobile breakpoint */
+  .page-container {
+    padding: 10px; /* Reduce overall padding */
+  }
 
-:deep(.el-input__wrapper) {
-  box-shadow: 0 2px 8px var(--box-shadow-color);
-  border-radius: 8px;
-}
+  .content-card {
+    max-width: 100%; /* Allow card to take full width */
+    padding: 20px; /* Reduce card padding */
+  }
 
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 2px 12px var(--box-shadow-color);
-}
+  .card-header {
+    font-size: 16px; /* Slightly smaller header font size */
+  }
 
-:deep(.el-button) {
-  height: 44px;
-  font-size: 16px;
-}
+  .password-form .el-form-item {
+    margin-bottom: 18px; /* Adjust form item spacing */
+  }
 
-:deep(.el-form-item__label) {
-  color: var(--text-color);
-}
-
-:deep(.el-card__header) {
-  border-bottom: 1px solid var(--hover-bg-color);
+  .submit-button {
+    margin-top: 5px; /* Adjust button margin */
+  }
 }
 </style>

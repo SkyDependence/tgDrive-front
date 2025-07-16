@@ -1,79 +1,97 @@
 <template>
-  <div class="backup-container">
-    <el-card class="backup-card">
+  <div class="page-container">
+    <el-card class="content-card">
       <template #header>
         <div class="card-header">
-          <span>数据库备份</span>
+          <el-icon><DataLine /></el-icon>
+          <span>数据库管理</span>
         </div>
       </template>
 
-      <el-button 
-        type="primary" 
-        @click="handleBackup"
-        :loading="backupLoading"
-      >
-        <el-icon><Download /></el-icon>
-        <span>下载数据库备份</span>
-      </el-button>
+      <div class="action-section">
+        <div class="action-item">
+          <h3>备份数据库</h3>
+          <p>将当前数据库下载为 .db 文件。请妥善保管备份文件。</p>
+          <el-button 
+            type="primary" 
+            @click="handleBackup"
+            :loading="backupLoading"
+            :icon="Download"
+            size="large"
+          >
+            下载备份
+          </el-button>
+        </div>
 
-      <el-upload
-        ref="uploadRef"
-        class="upload-container"
-        :before-upload="beforeUpload"
-        :show-file-list="false"
-        :auto-upload="false"
-        accept=".db"
-        :on-change="(file) => handleUpload(file.raw)"
-      >
-        <el-button type="success" @click="triggerUpload" :loading="restoreLoading">
-          <el-icon><Upload /></el-icon>
-          <span>恢复数据库</span>
-        </el-button>
-      </el-upload>
+        <el-divider direction="horizontal" />
 
-      <div class="backup-tips">
-        <el-alert
-          title="提示"
-          type="info"
-          :closable="false"
-        >
-          <p>点击按钮将下载最新的数据库备份文件</p>
-          <p>备份文件为SQLite格式，可直接用于恢复数据</p>
-        </el-alert>
+        <div class="action-item">
+          <h3>恢复数据库</h3>
+          <p>从 .db 备份文件恢复数据库。此操作将覆盖当前所有数据，请谨慎操作。</p>
+          <el-upload
+            ref="uploadRef"
+            :auto-upload="false"
+            :show-file-list="false"
+            accept=".db"
+            :on-change="handleFileSelect"
+          >
+            <el-button 
+              type="danger" 
+              :loading="restoreLoading"
+              :icon="Upload"
+              size="large"
+              plain
+            >
+              选择文件并恢复
+            </el-button>
+          </el-upload>
+        </div>
       </div>
+
     </el-card>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
-import { Download, Upload } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { Download, Upload, DataLine } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, UploadInstance, UploadFile } from 'element-plus'
 import request from '@/utils/request'
 
 const backupLoading = ref(false)
 const restoreLoading = ref(false)
-const uploadRef = ref(null)
+const uploadRef = ref<UploadInstance>()
 
-const triggerUpload = () => {
-  uploadRef.value.$refs['upload-inner'].handleClick()
-}
-
-const beforeUpload = (file) => {
-  const isDB = file.type === 'application/octet-stream' || file.name.endsWith('.db')
+const handleFileSelect = (file: UploadFile) => {
+  const isDB = file.raw?.type === 'application/octet-stream' || file.name.endsWith('.db');
   if (!isDB) {
-    ElMessage.error('只能上传.db格式的数据库文件')
-    return false
+    ElMessage.error('只能上传 .db 格式的数据库文件!');
+    return;
   }
-  return true
-}
 
-const handleUpload = async (file) => {
+  ElMessageBox.confirm(
+    `您确定要使用文件 "${file.name}" 恢复数据库吗？此操作不可逆。`,
+    '警告',
+    {
+      confirmButtonText: '确定恢复',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(() => {
+    handleUpload(file);
+  }).catch(() => {
+    ElMessage.info('已取消恢复操作');
+  });
+};
+
+const handleUpload = async (file: UploadFile) => {
+  if (!file.raw) return;
+
+  restoreLoading.value = true;
+  const formData = new FormData();
+  formData.append('multipartFile', file.raw);
+
   try {
-    restoreLoading.value = true
-    const formData = new FormData()
-    formData.append('multipartFile', file)
-    
     const response = await request({
       url: '/backup/upload',
       method: 'post',
@@ -81,69 +99,131 @@ const handleUpload = async (file) => {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-    })
-    
+    });
+
     if (response.data.code !== 1) {
-      throw new Error(response.data.msg || '数据库恢复失败')
+      throw new Error(response.data.msg || '数据库恢复失败');
     }
     
-    ElMessage.success('数据库恢复成功')
-  } catch (error) {
-    ElMessage.error(error.message)
+    ElMessage.success('数据库恢复成功');
+  } catch (error: any) {
+    ElMessage.error(error.message || '数据库恢复失败');
   } finally {
-    restoreLoading.value = false
+    restoreLoading.value = false;
+    uploadRef.value?.clearFiles();
   }
-}
+};
 
 const handleBackup = async () => {
+  backupLoading.value = true;
   try {
-    backupLoading.value = true
     const response = await request({
       url: '/backup/download',
       method: 'get',
       responseType: 'blob'
-    })
+    });
     
-    // 直接使用响应数据创建 Blob
-    const blob = new Blob([response.data])
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', 'tgDrive.db')
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
     
-    ElMessage.success('数据库备份下载成功')
-  } catch (error) {
-    ElMessage.error('下载失败：' + error.message)
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    link.setAttribute('download', `tgDrive-backup-${timestamp}.db`);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    ElMessage.success('数据库备份下载成功');
+  } catch (error: any) {
+    ElMessage.error('下载失败：' + error.message);
   } finally {
-    backupLoading.value = false
+    backupLoading.value = false;
   }
-}
+};
 </script>
 
 <style scoped>
-.backup-container {
+.page-container {
   padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
-.backup-card {
-  max-width: 600px;
-  margin: 0 auto;
+.content-card {
+  width: 100%;
+  max-width: 800px;
 }
 
 .card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 18px;
-  font-weight: bold;
+  font-weight: 500;
 }
 
-.upload-container {
-  margin-top: 20px;
+.action-section {
+  padding: 10px;
 }
 
-.backup-tips {
-  margin-top: 20px;
+.action-item {
+  margin: 20px 0;
+}
+
+.action-item h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.action-item p {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.el-divider {
+  margin: 40px 0;
+}
+
+/* Responsive styles for BackupPage.vue */
+@media (max-width: 767px) { /* Mobile breakpoint */
+  .page-container {
+    padding: 10px; /* Reduce overall padding */
+  }
+
+  .content-card {
+    max-width: 100%; /* Allow card to take full width */
+    padding: 20px; /* Reduce card padding */
+  }
+
+  .card-header {
+    font-size: 16px; /* Slightly smaller header font size */
+  }
+
+  .action-item {
+    margin: 15px 0; /* Reduce margin between action items */
+  }
+
+  .action-item h3 {
+    font-size: 15px; /* Slightly smaller heading */
+  }
+
+  .action-item p {
+    font-size: 13px; /* Slightly smaller paragraph text */
+  }
+
+  .action-item .el-button {
+    width: 100%; /* Make buttons full width */
+  }
+
+  .el-divider {
+    margin: 30px 0; /* Reduce divider margin */
+  }
 }
 </style>

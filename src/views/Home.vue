@@ -1,162 +1,111 @@
 <template>
-  <div class="config-container">
-    <div class="form-wrapper">
-      <div class="form-header">
-        <h1>配置设置</h1>
-        <p>设置您的Telegram bot</p>
-      </div>
-
+  <div class="page-container">
+    <!-- Form for creating/updating config -->
+    <el-card class="content-card">
+      <template #header>
+        <div class="card-header">
+          <el-icon><Setting /></el-icon>
+          <span>Bot 配置</span>
+        </div>
+      </template>
       <el-form
         ref="ruleFormRef"
         :model="ruleForm"
         :rules="rules"
-        label-width="120px"
+        label-position="top"
         class="config-form"
         @submit.prevent="handleSubmit"
       >
-        <div class="form-grid">
-          <el-form-item label="配置名称" prop="name">
-            <el-input 
-              v-model="ruleForm.name" 
-              placeholder="请输入配置文件名称" 
-              clearable
-            >
-              <template #prefix>
-                <el-icon><Document /></el-icon>
-              </template>
-            </el-input>
-          </el-form-item>
+        <el-row :gutter="20">
+          <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+            <el-form-item label="配置名称" prop="name">
+              <el-input v-model="ruleForm.name" placeholder="为您的配置命名" :prefix-icon="Document" size="large" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+            <el-form-item label="Chat ID" prop="target">
+              <el-input v-model="ruleForm.target" placeholder="请输入接收文件的频道/用户 ID" :prefix-icon="ChatDotRound" size="large" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+            <el-form-item label="Bot Token" prop="token">
+              <el-input v-model="ruleForm.token" placeholder="请输入 Telegram Bot Token" :prefix-icon="Key" size="large" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+            <el-form-item label="自定义 URL (选填)" prop="url">
+              <el-input v-model="ruleForm.url" placeholder="用于生成下载链接的域名" :prefix-icon="Link" size="large" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+            <el-form-item label="访问密码 (选填)" prop="pass">
+              <el-input v-model="ruleForm.pass" type="password" placeholder="为配置设置访问密码" show-password :prefix-icon="Lock" size="large" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-form-item label="bot token" prop="token">
-            <el-input 
-              v-model="ruleForm.token" 
-              placeholder="请输入Telegram bot token" 
-              clearable
-            >
-              <template #prefix>
-                <el-icon><Key /></el-icon>
-              </template>
-            </el-input>
-          </el-form-item>
-
-          <el-form-item label="Chat ID" prop="target">
-            <el-input 
-              v-model="ruleForm.target" 
-              placeholder="请输入Chat ID" 
-              clearable
-            >
-              <template #prefix>
-                <el-icon><ChatDotRound /></el-icon>
-              </template>
-            </el-input>
-          </el-form-item>
-
-          <el-form-item label="URL（选填）" prop="url">
-            <el-input 
-              v-model="ruleForm.url" 
-              placeholder="请输入URL" 
-              clearable
-            >
-              <template #prefix>
-                <el-icon><Link /></el-icon>
-              </template>
-            </el-input>
-          </el-form-item>
-
-          <el-form-item label="密码（选填）" prop="pass">
-            <el-input 
-              v-model="ruleForm.pass" 
-              type="password" 
-              placeholder="请输入密码" 
-              show-password
-              clearable
-            >
-              <template #prefix>
-                <el-icon><Lock /></el-icon>
-              </template>
-            </el-input>
-          </el-form-item>
-        </div>
-
-        <div class="form-actions">
-          <el-button 
-            type="primary" 
-            native-type="submit" 
-            class="submit-btn"
-            :loading="isSubmitting"
-          >
-            提交配置
+        <el-form-item class="form-actions">
+          <el-button type="primary" native-type="submit" :loading="isSubmitting" size="large">
+            {{ isSubmitting ? '提交中...' : '保存并提交' }}
           </el-button>
-          <el-button 
-            plain 
-            @click="resetForm" 
-            class="reset-btn"
-          >
-            重置
-          </el-button>
-        </div>
+          <el-button @click="resetForm" size="large">重置表单</el-button>
+        </el-form-item>
       </el-form>
-    </div>
+    </el-card>
 
-    <div class="load-config-section">
-      <h2>加载现有配置</h2>
-      <div class="load-config-wrapper">
-        <div class="load-config-input">
-          <el-select 
-            v-model="selectedConfig" 
-            placeholder="请选择配置文件" 
-            class="config-select" 
-            :loading="isLoadingConfigs"
-            @change="handleConfigSelect"
-          >
-            <el-option
-              v-for="config in configList"
-              :key="config.name"
-              :label="config.name"
-              :value="config.name"
-            />
-          </el-select>
-          <el-button 
-            type="primary" 
-            @click="loadConfig" 
-            class="load-btn"
-            :loading="isLoading"
-            :disabled="!selectedConfig"
-          >
-            加载配置
-          </el-button>
+    <!-- Section for loading existing configs -->
+    <el-card class="content-card">
+      <template #header>
+        <div class="card-header">
+          <el-icon><Files /></el-icon>
+          <span>加载现有配置</span>
         </div>
+      </template>
+      <div class="load-config-wrapper">
+        <el-select
+          v-model="selectedConfig"
+          placeholder="请选择一个配置文件进行加载"
+          class="config-select"
+          size="large"
+          :loading="isLoadingConfigs"
+          @change="handleConfigSelect"
+          filterable
+        >
+          <el-option
+            v-for="config in configList"
+            :key="config.name"
+            :label="config.name"
+            :value="config.name"
+          />
+        </el-select>
+        <el-button type="success" @click="loadConfig" :loading="isLoading" :disabled="!selectedConfig" size="large" plain>
+          加载选中配置
+        </el-button>
+      </div>
 
-        <!-- 配置预览部分 -->
+      <el-collapse-transition>
         <div v-if="selectedConfigData" class="config-preview">
+          <el-divider />
           <h3>配置预览</h3>
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="配置名称">{{ selectedConfigData.name }}</el-descriptions-item>
-            <el-descriptions-item label="Bot Token">{{ selectedConfigData.token }}</el-descriptions-item>
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item label="名称">{{ selectedConfigData.name }}</el-descriptions-item>
+            <el-descriptions-item label="Token">{{ selectedConfigData.token }}</el-descriptions-item>
             <el-descriptions-item label="Chat ID">{{ selectedConfigData.target }}</el-descriptions-item>
-            <el-descriptions-item label="URL" v-if="selectedConfigData.url">{{ selectedConfigData.url }}</el-descriptions-item>
-            <el-descriptions-item label="密码" v-if="selectedConfigData.pass">******</el-descriptions-item>
+            <el-descriptions-item label="URL">{{ selectedConfigData.url || '未设置' }}</el-descriptions-item>
+            <el-descriptions-item label="密码">{{ selectedConfigData.pass ? '******' : '未设置' }}</el-descriptions-item>
           </el-descriptions>
         </div>
-      </div>
-    </div>
+      </el-collapse-transition>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue';
 import request from '../utils/request'
-import { useRouter } from 'vue-router';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage } from 'element-plus';
-import {
-  Document,
-  Key,
-  ChatDotRound,
-  Link,
-  Lock,
-  Folder
-} from '@element-plus/icons-vue';
+import { Document, Key, ChatDotRound, Link, Lock, Setting, Files } from '@element-plus/icons-vue';
 
 interface ConfigForm {
   name: string;
@@ -167,10 +116,8 @@ interface ConfigForm {
 }
 
 const ruleFormRef = ref<FormInstance>();
-const router = useRouter();
 
-// 表单状态
-const ruleForm = reactive({
+const ruleForm = reactive<ConfigForm>({
   name: '',
   token: '',
   target: '',
@@ -178,275 +125,165 @@ const ruleForm = reactive({
   pass: '',
 });
 
-// 加载状态
 const isSubmitting = ref(false);
 const isLoading = ref(false);
 const isLoadingConfigs = ref(false);
-
-// 配置文件列表
 const configList = ref<ConfigForm[]>([]);
 const selectedConfig = ref('');
 const selectedConfigData = ref<ConfigForm | null>(null);
 
-// 表单验证规则
 const rules = reactive<FormRules>({
-  name: [{
-    required: true,
-    message: '请输入配置文件名称',
-    trigger: 'blur'
-  }],
-  token: [{
-    required: true,
-    message: '请输入Telegram机器人令牌',
-    trigger: 'blur'
-  }],
-  target: [{
-    required: true,
-    message: '请输入聊天ID',
-    trigger: 'blur'
-  }],
+  name: [{ required: true, message: '请输入配置名称', trigger: 'blur' }],
+  token: [{ required: true, message: '请输入 Bot Token', trigger: 'blur' }],
+  target: [{ required: true, message: '请输入 Chat ID', trigger: 'blur' }],
 });
 
-// 获取配置文件列表
 const fetchConfigList = async () => {
   isLoadingConfigs.value = true;
   try {
     const response = await request.get('/config/configs');
-    const { code, data } = response.data;
-
-    if (code === 1 && Array.isArray(data)) {
-      configList.value = data;
+    if (response.data.code === 1 && Array.isArray(response.data.data)) {
+      configList.value = response.data.data;
     } else {
       ElMessage.error('获取配置列表失败');
     }
   } catch (error) {
     ElMessage.error('获取配置列表失败，请检查网络');
+  } finally {
+    isLoadingConfigs.value = false;
   }
-  isLoadingConfigs.value = false;
 };
 
-// 处理配置选择
 const handleConfigSelect = (configName: string) => {
   selectedConfigData.value = configList.value.find(config => config.name === configName) || null;
 };
 
-// 提交表单处理器
 const handleSubmit = async () => {
   if (!ruleFormRef.value) return;
-
-  isSubmitting.value = true;
-
-  ruleFormRef.value.validate(async (valid) => {
+  await ruleFormRef.value.validate(async (valid) => {
     if (valid) {
+      isSubmitting.value = true;
       try {
-        const payload = { ...ruleForm };
-        const response = await request.post('/config', payload);
-
-        const { code, msg } = response.data;
-
-        if (code === 1) {
-          ElMessage.success(msg || '配置提交成功');
-          
-          // 提交成功后重置表单并刷新配置列表
-          if (ruleFormRef.value) {
-            ruleFormRef.value.resetFields();
-          }
+        const response = await request.post('/config', ruleForm);
+        if (response.data.code === 1) {
+          ElMessage.success(response.data.msg || '配置提交成功');
+          ruleFormRef.value?.resetFields();
           fetchConfigList();
         } else {
-          ElMessage.error(msg || '提交失败，请重试');
+          ElMessage.error(response.data.msg || '提交失败');
         }
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.msg
-          ? '提交失败: ' + error.response.data.msg
-          : '提交失败，请检查网络连接');
+        ElMessage.error(error.response?.data?.msg || '提交失败，请检查网络');
+      } finally {
+        isSubmitting.value = false;
       }
-    } else {
-      ElMessage.error('请填写所有必填字段');
     }
-
-    isSubmitting.value = false;
   });
 };
 
-// 重置表单处理器
 const resetForm = () => {
-  if (!ruleFormRef.value) return;
-  ruleFormRef.value.resetFields();
+  ruleFormRef.value?.resetFields();
 };
 
-// 加载配置处理器
 const loadConfig = async () => {
   if (!selectedConfig.value) {
-    ElMessage.error('请选择配置文件');
+    ElMessage.warning('请先选择一个配置');
     return;
   }
-
   isLoading.value = true;
-
   try {
     const response = await request.get(`/config/${selectedConfig.value}`);
-    const { code, msg } = response.data;
-
-    if (code === 1) {
-      ElMessage.success(msg || '配置加载成功');
+    if (response.data.code === 1) {
+      ElMessage.success(response.data.msg || '配置加载成功');
     } else {
-      ElMessage.error(msg || '加载配置失败');
+      ElMessage.error(response.data.msg || '加载配置失败');
     }
   } catch (error) {
     ElMessage.error('加载失败，请检查网络');
+  } finally {
+    isLoading.value = false;
   }
-
-  isLoading.value = false;
 };
 
-// 组件挂载时获取配置列表
 onMounted(() => {
   fetchConfigList();
 });
 </script>
 
 <style scoped>
-.config-container {
+.page-container {
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  background: var(--container-bg-color);
-  min-height: 85vh;
+  gap: 20px;
 }
 
-.form-wrapper {
-  background-color: var(--container-bg-color);
-  border-radius: 16px;
-  box-shadow: 0 10px 25px var(--box-shadow-color);
-  padding: 2.5rem;
-  transition: all 0.3s ease;
-}
-
-.form-header {
-  text-align: center;
-  margin-bottom: 0.5rem;
-}
-
-.form-header h1 {
-  color: var(--text-color);
-  font-size: 2rem;
-  margin: 0.5rem;
-}
-
-.form-header p {
-  color: var(--text-color);
-  font-size: 1rem;
-}
-
-.form-grid {
-  display: flex;
-  flex-direction: column;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.2rem;
-}
-
-.config-form .el-form-item {
+.content-card {
   width: 100%;
-  box-sizing: border-box;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 500;
 }
 
 .form-actions {
+  margin-top: 20px;
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.submit-btn,
-.reset-btn {
-  width: 200px;
-  padding: 12px;
-  font-size: 1rem;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.submit-btn {
-  background-color: #4a90e2;
-  border-color: #4a90e2;
-}
-
-.reset-btn {
-  color: #4a90e2;
-  border-color: #4a90e2;
-}
-
-.load-config-section {
-  background-color: var(--container-bg-color);
-  border-radius: 16px;
-  box-shadow: 0 10px 25px var(--box-shadow-color);
-  padding: 2rem;
+  justify-content: flex-end;
 }
 
 .load-config-wrapper {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.load-config-input {
-  display: flex;
-  gap: 1rem;
+  gap: 10px;
+  align-items: center;
 }
 
 .config-select {
-  flex: 1;
-}
-
-.load-btn {
-  width: 250px;
+  flex-grow: 1;
 }
 
 .config-preview {
-  background-color: var(--background-color);
-  border-radius: 8px;
-  padding: 1rem;
+  margin-top: 20px;
 }
 
 .config-preview h3 {
-  margin-bottom: 1rem;
-  color: var(--text-color);
+  margin-bottom: 10px;
+  font-size: 16px;
 }
 
-/* Responsive Design */
-@media screen and (max-width: 768px) {
-  .config-container {
-    padding: 1rem;
-  }
-
-  .form-wrapper,
-  .load-config-section {
-    padding: 1.5rem;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
+/* Responsive styles for Home.vue */
+@media (max-width: 767px) { /* Mobile breakpoint */
+  .page-container {
+    padding: 10px; /* Reduce padding on mobile */
+    gap: 15px; /* Reduce gap between cards */
   }
 
   .form-actions {
-    flex-direction: column;
+    flex-direction: column; /* Stack buttons */
+    gap: 10px; /* Add gap between stacked buttons */
+    align-items: stretch; /* Stretch buttons to full width */
   }
 
-  .submit-btn,
-  .reset-btn,
-  .load-btn {
-    width: 100%;
+  .form-actions .el-button {
+    width: 100%; /* Make buttons full width */
   }
 
-  .load-config-input {
-    flex-direction: column;
+  .load-config-wrapper {
+    flex-direction: column; /* Stack select and button */
+    gap: 10px;
+    align-items: stretch; /* Stretch items to full width */
   }
 
   .config-select {
-    width: 100%;
+    width: 100%; /* Make select full width */
+  }
+
+  .load-config-wrapper .el-button {
+    width: 100%; /* Make button full width */
   }
 }
 </style>

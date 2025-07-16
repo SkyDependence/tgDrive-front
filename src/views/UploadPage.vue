@@ -1,525 +1,263 @@
 <template>
-  <div class="upload-page-container">
-    <el-card shadow="hover" class="upload-card">
-      <template #header>
-        <div class="card-header">
-          <h1>文件上传</h1>
-          <el-button type="primary" @click="goToFileList">文件列表</el-button>
-        </div>
-      </template>
+  <div class="page-container">
+    <el-row :gutter="20">
+      <!-- Left Column: Upload and Progress -->
+      <el-col :xs="24" :sm="24" :md="14" :lg="14" :xl="14">
+        <el-card class="content-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon><UploadFilled /></el-icon>
+              <span>文件上传</span>
+            </div>
+          </template>
 
-      <!-- File Upload Zone -->
-      <el-upload
-        class="file-uploader"
-        drag
-        multiple
-        :auto-upload="false"
-        :on-change="handleFileChange"
-        :file-list="selectedFiles"
-      >
-        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-        <div class="el-upload__text">
-          将文件拖到此处，或 <em>点击选择文件</em>，
-          也可以Ctrl + v将文件粘贴上传
-        </div>
-      </el-upload>
-
-      <!-- Upload Progress Section -->
-      <div v-if="uploading" class="upload-progress-container">
-        <!-- 服务器状态消息 - 仅在有文件上传完成或出错时显示 -->
-        <div v-if="shouldShowStatusMessage" class="upload-status-message">
-          <el-alert
-            :type="uploadStatusType"
-            :closable="false"
-            show-icon
+          <!-- Upload Zone -->
+          <el-upload
+            ref="uploadRef"
+            drag
+            multiple
+            action="#"
+            :auto-upload="false"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            :file-list="selectedFiles"
+            class="upload-dragger"
           >
-            <template #title>
-              {{ uploadStatusTitle }}
+            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+            <div class="el-upload__text">
+              将文件拖到此处, 或 <em>点击选择</em>
+            </div>
+            <template #tip>
+              <div class="el-upload__tip">
+                支持多文件上传，支持 Ctrl+V 粘贴文件。
+              </div>
             </template>
-            <template #default>
-              <p>{{ uploadStatusMessage }}</p>
-            </template>
-          </el-alert>
-        </div>
-        
-        <div v-for="(file, index) in uploadProgress" :key="index" class="file-progress-item">
-          <div class="file-info">
-            <span class="file-name">{{ file.name }}</span>
-          </div>
-          <el-progress 
-            :percentage="Number(file.percentage.toFixed(2))" 
-            :format="percentageFormatter"
-            :status="file.status === 'success' ? 'success' : file.status === 'error' ? 'exception' : ''"
-          />
-        </div>
-      </div>
+          </el-upload>
 
-      <!-- Upload Button -->
-      <div class="upload-actions">
-        <el-button 
-          type="primary" 
-          @click="handleUpload" 
-          :disabled="isUploading || selectedFiles.length === 0"
-          :loading="isUploading"
-        >
-          {{ isUploading ? '正在上传' : '上传文件' }}
-        </el-button>
-      </div>
-
-      <!-- Message Section -->
-      <el-card shadow="never" class="message-section">
-        <el-form :model="messageForm" @submit.prevent="handleSendMessage">
-          <el-form-item label="发送消息">
-            <el-input 
-              v-model="messageForm.message" 
-              placeholder="输入消息以测试Bot连接..."
-              clearable
+          <!-- Upload Button -->
+          <div class="upload-actions">
+            <el-button
+              type="primary"
+              @click="handleUpload"
+              :disabled="isUploading || selectedFiles.length === 0"
+              :loading="isUploading"
+              size="large"
+              :icon="Upload"
             >
-              <template #append>
-                <el-button 
-                  type="primary" 
-                  @click="handleSendMessage"
-                  :disabled="!messageForm.message"
-                >
-                  发送
-                </el-button>
-              </template>
-            </el-input>
-          </el-form-item>
-        </el-form>
-      </el-card>
+              {{ isUploading ? `正在上传 (${uploadCompletedCount}/${selectedFiles.length})` : '开始上传' }}
+            </el-button>
+          </div>
 
-      <!-- Uploaded Files and Messages -->
-      <el-alert 
-        v-if="message" 
-        :title="message" 
-        type="info" 
-        show-icon 
-        class="upload-message"
-      />
+          <!-- Progress Section -->
+          <el-collapse-transition>
+            <div v-if="uploadProgress.length > 0" class="progress-section">
+              <div v-for="file in uploadProgress" :key="file.uid" class="file-progress-item">
+                <span class="file-name">{{ file.name }}</span>
+                <el-progress
+                  :percentage="file.percentage"
+                  :status="file.status"
+                  :stroke-width="8"
+                  striped
+                  :striped-flow="file.status !== 'success' && file.status !== 'exception'"
+                />
+              </div>
+            </div>
+          </el-collapse-transition>
+        </el-card>
+      </el-col>
 
-      <el-card v-if="uploadedFiles.length > 0" shadow="never" class="uploaded-files-card">
-        <template #header>
-          <span>已上传文件</span>
-        </template>
-        <el-table 
-          :data="uploadedFiles" 
-          size="small"
-          @selection-change="handleUploadedSelectionChange"
-        >
-          <el-table-column type="selection" width="55" />
-          <el-table-column prop="fileName" label="文件名" />
-          <el-table-column label="操作">
-            <template #default="scope">
-              <!-- 复制 Markdown 按钮 -->
-              <el-button 
-                type="primary" 
-                size="small" 
-                @click="copyMarkdown(scope.row)"
-              >
-                复制Markdown
-              </el-button>
+      <!-- Right Column: Uploaded Files -->
+      <el-col :xs="24" :sm="24" :md="10" :lg="10" :xl="10">
+        <el-card class="content-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon><Tickets /></el-icon>
+              <span>本次上传结果</span>
+              <el-button text type="primary" @click="goToFileList">查看全部</el-button>
+            </div>
+          </template>
+          
+          <div v-if="uploadedFiles.length === 0" class="empty-state">
+            <el-empty description="暂无上传成功的文件" />
+          </div>
 
-              <!-- 复制链接按钮 -->
-              <el-button 
-                type="success" 
-                size="small" 
-                @click="copyLink(scope.row)"
-              >
-                复制链接
-              </el-button>
-
-              <!-- 直接跳转下载按钮 -->
-              <el-button 
-                type="warning" 
-                size="small" 
-                @click="openLink(scope.row.downloadLink)"
-              >
-                直接下载
-              </el-button>
-            </template>
-          </el-table-column>
-      </el-table>
-      
-      <div class="batch-actions" v-if="selectedUploadedFiles.length > 0">
-        <el-button 
-          type="primary" 
-          size="small" 
-          @click="batchCopyMarkdown"
-        >
-          批量复制Markdown
-        </el-button>
-        <el-button 
-          type="success" 
-          size="small" 
-          @click="batchCopyLinks"
-        >
-          批量复制链接
-        </el-button>
-      </div>
-      </el-card>
-    </el-card>
+          <div v-else class="uploaded-files-list">
+            <div v-for="file in uploadedFiles" :key="file.fileId" class="uploaded-file-item">
+              <div class="file-details">
+                <el-icon><Document /></el-icon>
+                <span class="uploaded-file-name">{{ file.fileName }}</span>
+              </div>
+              <el-button-group size="small">
+                <el-button :icon="Link" @click="copyMarkdown(file)" />
+                <el-button :icon="CopyDocument" @click="copyLink(file)" />
+                <el-button :icon="Download" @click="openLink(file.downloadUrl)" />
+              </el-button-group>
+            </div>
+            <div class="batch-actions">
+              <el-button @click="batchCopyMarkdown" :disabled="uploadedFiles.length === 0" size="small" plain>批量复制 (MD)</el-button>
+              <el-button @click="batchCopyLinks" :disabled="uploadedFiles.length === 0" size="small" plain>批量复制 (链接)</el-button>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { 
-  ElMessage, 
-  UploadFile, 
-  UploadFiles, 
-  UploadRawFile
-} from 'element-plus';
-import { 
-  UploadFilled, 
-  Document, 
-  Delete 
-} from '@element-plus/icons-vue';
-import { onBeforeUnmount } from 'vue';
-import { onMounted } from 'vue';
+import { ElMessage, UploadFile, UploadFiles, UploadRawFile, UploadInstance } from 'element-plus';
+import { UploadFilled, Upload, Document, Link, CopyDocument, Download, Tickets } from '@element-plus/icons-vue';
 
-const router = useRouter();
-
-// Reactive state
-const selectedFiles = ref<UploadFile[]>([]);
-const uploadedFiles = ref<any[]>([]);
-const selectedUploadedFiles = ref<any[]>([]);
-const message = ref('');
-const isUploading = ref(false);
-const uploading = ref(false);
-
-// 上传状态消息
-const uploadStatusTitle = ref('正在等待服务器处理...');
-const uploadStatusMessage = ref('文件已上传到后端服务器，现在正在等待服务器将文件转发到最终存储位置，请耐心等待。');
-const uploadStatusType = ref('info');
-
-// 上传进度状态
-interface ProgressItem {
-  name: string;
-  percentage: number;
-  status: 'progress' | 'success' | 'error';
+interface UploadedFile {
+  fileName: string;
+  downloadUrl: string;
+  fileId: string;
 }
 
+interface ProgressItem {
+  uid: number;
+  name: string;
+  percentage: number;
+  status: 'success' | 'exception' | undefined;
+}
+
+const router = useRouter();
+const uploadRef = ref<UploadInstance>();
+
+const selectedFiles = ref<UploadFile[]>([]);
+const uploadedFiles = ref<UploadedFile[]>([]);
+const isUploading = ref(false);
 const uploadProgress = ref<ProgressItem[]>([]);
 
-// 添加百分比格式化函数，保留两位小数
-const percentageFormatter = (percentage: number) => {
-  return percentage.toFixed(2) + '%';
-};
+const uploadCompletedCount = computed(() => 
+  uploadProgress.value.filter(p => p.status === 'success').length
+);
 
-// 计算属性：检查是否有文件已完成上传到前端（进度100%）
-const hasCompletedUploads = computed(() => {
-  return uploadProgress.value.some(file => file.percentage >= 100);
-});
-
-// 新增计算属性：检查是否显示状态信息
-const shouldShowStatusMessage = computed(() => {
-  // 只有在有文件100%上传完成或有错误时才显示提示
-  return hasCompletedUploads.value || uploadProgress.value.some(file => file.status === 'error');
-});
-
-// 监听已完成上传，设置上传状态消息
-const updateUploadStatusMessage = () => {
-  if (hasCompletedUploads.value) {
-    uploadStatusType.value = 'info';
-    uploadStatusTitle.value = '正在等待服务器处理...';
-    uploadStatusMessage.value = '文件已上传到后端服务器，现在正在等待服务器将文件转发到最终存储位置，请耐心等待。';
-  }
-};
-
-// 设置错误状态消息
-const setErrorStatusMessage = (errorMsg: string) => {
-  uploadStatusType.value = 'error';
-  uploadStatusTitle.value = '上传失败';
-  uploadStatusMessage.value = errorMsg || '文件上传失败，请重试。';
-};
-
-const messageForm = reactive({
-  message: ''
-});
-
-// File handling methods
 const handleFileChange = (file: UploadFile, fileList: UploadFiles) => {
   selectedFiles.value = fileList;
 };
 
-const removeFile = (index: number) => {
-  selectedFiles.value.splice(index, 1);
+const handleFileRemove = (file: UploadFile, fileList: UploadFiles) => {
+  selectedFiles.value = fileList;
 };
 
-const clearAllFiles = () => {
-  selectedFiles.value = [];
-};
-
-// Upload method
 const handleUpload = async () => {
   if (selectedFiles.value.length === 0) {
-    ElMessage.warning('请先选择至少一个文件');
+    ElMessage.warning('请先选择文件');
     return;
   }
 
   isUploading.value = true;
-  uploading.value = true;
-  
-  // 初始化进度状态
-  uploadProgress.value = selectedFiles.value.map(file => ({
-    name: file.name,
+  uploadedFiles.value = []; // Clear previous results
+  uploadProgress.value = selectedFiles.value.map(f => ({
+    uid: f.uid,
+    name: f.name,
     percentage: 0,
-    status: 'progress' as const
+    status: undefined,
   }));
 
-  try {
-    // 逐个异步上传文件
-    await Promise.all(selectedFiles.value.map(async (uploadFile, index) => {
-      const formData = new FormData();
-      formData.append('file', uploadFile.raw as File);
+  for (const file of selectedFiles.value) {
+    const progressItem = uploadProgress.value.find(p => p.uid === file.uid);
+    if (!progressItem) continue;
 
-      try {
-        const response = await axios.post('/api/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          // 添加上传进度事件处理
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percentage = (progressEvent.loaded / progressEvent.total) * 100;
-              uploadProgress.value[index].percentage = percentage;
-              
-              // 当进度达到100%时，将状态设为success和更新状态消息
-              if (percentage >= 100) {
-                uploadProgress.value[index].status = 'success';
-                updateUploadStatusMessage();
-              }
-            }
+    const formData = new FormData();
+    formData.append('file', file.raw as File);
+
+    try {
+      const response = await axios.post('/api/upload', formData, {
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            progressItem.percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           }
-        });
+        },
+      });
 
-        const { code, msg, data } = response.data;
-
-        if (code === 1) {
-          uploadedFiles.value.push(data);
-          ElMessage.success(msg || '文件上传成功');
-          uploadProgress.value[index].status = 'success';
-          
-          // 上传成功后等待3秒，移除该文件的进度条
-          setTimeout(() => {
-            // 检查是否所有文件都上传完毕
-            const allDone = uploadProgress.value.every(file => 
-              file.status === 'success' || file.status === 'error'
-            );
-            
-            // 如果所有文件都处理完毕，则完全隐藏上传进度区域
-            if (allDone) {
-              uploading.value = false;
-              uploadProgress.value = [];
-            }
-          }, 3000);
-          
-        } else {
-          // 显示服务器返回的错误信息
-          const errorMsg = msg || '文件上传失败，请重试';
-          ElMessage.error(errorMsg);
-          uploadProgress.value[index].status = 'error';
-          
-          // 更新上传状态消息为错误信息
-          setErrorStatusMessage(errorMsg);
-        }
-      } catch (error: any) {
-        uploadProgress.value[index].status = 'error';
-        
-        // 获取错误消息
-        const errorMsg = error.response?.data?.msg 
-          ? '上传失败: ' + error.response.data.msg
-          : '上传失败，请检查网络连接或稍后重试';
-        
-        ElMessage.error(errorMsg);
-        
-        // 更新上传状态消息为错误信息
-        setErrorStatusMessage(errorMsg);
+      const { code, msg, data } = response.data;
+      if (code === 1) {
+        progressItem.status = 'success';
+        uploadedFiles.value.push(data);
+      } else {
+        progressItem.status = 'exception';
+        ElMessage.error(`${file.name} 上传失败: ${msg || '未知错误'}`);
       }
-    }));
-    
-    // 清空已选文件
-    selectedFiles.value = [];
-    
-  } catch (error) {
-    ElMessage.error('上传过程中发生错误');
-    setErrorStatusMessage('上传过程中发生错误');
-  } finally {
-    isUploading.value = false;
+    } catch (error: any) {
+      progressItem.status = 'exception';
+      const errorMsg = error.response?.data?.msg || '网络错误';
+      ElMessage.error(`${file.name} 上传失败: ${errorMsg}`);
+    }
   }
+
+  isUploading.value = false;
+  selectedFiles.value = [];
+  uploadRef.value?.clearFiles();
 };
 
-// Send message method
-const handleSendMessage = async () => {
-  if (!messageForm.message) {
-    ElMessage.warning('请先输入消息');
-    return;
-  }
-
-  try {
-    await axios.post('/api/send-message', { message: messageForm.message });
-    ElMessage.success('消息发送成功');
-    messageForm.message = '';
-  } catch (error: any) {
-    const errorMsg = error.response?.data?.msg || '消息发送失败，请重试';
-    ElMessage.error(errorMsg);
-  }
-};
-
-// Navigation method
 const goToFileList = () => {
   router.push('/fileList');
 };
 
-// 获取FileList选中的文件
-const getSelectedFilesFromList = async () => {
-  try {
-    const response = await axios.get('/api/get-selected-files');
-    if (response.data.code === 1) {
-      const files = response.data.data.map((file: any) => ({
-        name: file.fileName,
-        size: file.size,
-        uid: Date.now() + Math.random(),
-        raw: new File([], file.fileName, { type: 'application/octet-stream' }),
-        status: 'ready'
-      }));
-
-      // 去重逻辑
-      files.forEach((newFile: any) => {
-        const isDuplicate = selectedFiles.value.some(
-          existingFile => existingFile.name === newFile.name && existingFile.size === newFile.size
-        );
-        if (!isDuplicate) {
-          selectedFiles.value.push(newFile);
-        }
-      });
-
-      ElMessage.success(`已添加${files.length}个文件`);
-    } else {
-      ElMessage.error(response.data.msg || '获取选中文件失败');
-    }
-  } catch (error) {
-    ElMessage.error('获取选中文件失败');
-  }
+const copyToClipboard = (text: string, message: string) => {
+  navigator.clipboard.writeText(text).then(() => {
+    ElMessage.success(message);
+  }).catch(err => {
+    ElMessage.error('复制失败: ' + err);
+  });
 };
 
-const handlePaste = (event: ClipboardEvent) => {
-  // 只获取粘贴的第一个对象
-  const item = event.clipboardData?.items[0];
-  if (!item) return; // 没有内容时直接返回
-
-  // 检查第一个对象是否为文件
-  if (item.kind === 'file') {
-    const file = item.getAsFile();
-    if (file) {
-      
-      // 转换为 Element Plus 所需的 UploadFile 格式
-      const rawFile: UploadRawFile = Object.assign(file, { 
-        uid: Date.now() 
-      });
-      const uploadFile: UploadFile = {
-        name: rawFile.name,
-        size: rawFile.size,
-        uid: rawFile.uid,
-        raw: rawFile,
-        status: 'ready'
-      };
-
-      // 文件去重逻辑
-      const isDuplicate = selectedFiles.value.some(
-        existingFile => existingFile.name === uploadFile.name && existingFile.size === uploadFile.size
-      );
-
-      if (!isDuplicate) {
-        selectedFiles.value.push(uploadFile);
-        ElMessage.success(`已添加粘贴的文件: ${file.name}`);
-      } else {
-        ElMessage.warning(`文件 ${file.name} 已经存在列表中`);
-      }
-    }
-  } else {
-    console.log('粘贴的第一个对象不是文件，类型为:', item.kind, item.type);
-  }
+const copyMarkdown = (file: UploadedFile) => {
+  copyToClipboard(`[${file.fileName}](${file.downloadUrl})`, 'Markdown 格式已复制');
 };
 
-// 复制 Markdown 按钮的逻辑
-const copyMarkdown = (row: any) => {
-  const markdownText = `![${row.fileName}](${row.downloadLink})`;
-  copyToClipboard(markdownText);
-  ElMessage.success('Markdown 格式已复制到剪贴板');
+const copyLink = (file: UploadedFile) => {
+  copyToClipboard(file.downloadUrl, '下载链接已复制');
 };
 
-// 复制链接按钮的逻辑
-const copyLink = (row: any) => {
-  const link = row.downloadLink;
-  copyToClipboard(link);
-  ElMessage.success('下载链接已复制到剪贴板');
-};
-
-// 直接下载按钮的逻辑
 const openLink = (url: string) => {
   window.open(url, '_blank');
 };
 
-// 复制到剪贴板的通用方法
-const handleUploadedSelectionChange = (selection: any[]) => {
-  selectedUploadedFiles.value = selection;
-};
-
 const batchCopyMarkdown = () => {
-  if (selectedUploadedFiles.value.length === 0) return;
-  
-  const markdownText = selectedUploadedFiles.value
-    .map(file => `![${file.fileName}](${file.downloadLink})`)
-    .join('\n');
-  copyToClipboard(markdownText);
-  ElMessage.success(`已复制${selectedUploadedFiles.value.length}个文件的Markdown格式`);
+  const text = uploadedFiles.value.map(f => `[${f.fileName}](${f.downloadUrl})`).join('\n');
+  copyToClipboard(text, `已批量复制 ${uploadedFiles.value.length} 个 Markdown 链接`);
 };
 
 const batchCopyLinks = () => {
-  if (selectedUploadedFiles.value.length === 0) return;
-  
-  const links = selectedUploadedFiles.value
-    .map(file => file.downloadLink)
-    .join('\n');
-  copyToClipboard(links);
-  ElMessage.success(`已复制${selectedUploadedFiles.value.length}个文件的链接`);
+  const text = uploadedFiles.value.map(f => f.downloadUrl).join('\n');
+  copyToClipboard(text, `已批量复制 ${uploadedFiles.value.length} 个下载链接`);
 };
 
-const batchDeleteFiles = async () => {
-  if (selectedUploadedFiles.value.length === 0) return;
-  
-  try {
-    const fileIds = selectedUploadedFiles.value.map(file => file.fileId);
-    const response = await axios.post('/api/delete-files', { fileIds });
-    
-    if (response.data.code === 1) {
-      uploadedFiles.value = uploadedFiles.value.filter(
-        file => !fileIds.includes(file.fileId)
-      );
-      ElMessage.success(`已删除${selectedUploadedFiles.value.length}个文件`);
-      selectedUploadedFiles.value = [];
-    } else {
-      ElMessage.error(response.data.msg || '删除文件失败');
+const handlePaste = (event: ClipboardEvent) => {
+  const items = event.clipboardData?.items;
+  if (!items) return;
+
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].kind === 'file') {
+      const file = items[i].getAsFile();
+      if (file) {
+        const uid = Date.now() + i;
+        const uploadFile: UploadFile = {
+          name: file.name,
+          size: file.size,
+          uid: uid,
+          raw: Object.assign(file, { uid }) as UploadRawFile,
+          status: 'ready',
+        };
+        
+        const isDuplicate = selectedFiles.value.some(f => f.name === uploadFile.name && f.size === uploadFile.size);
+        if (!isDuplicate) {
+          selectedFiles.value.push(uploadFile);
+        }
+      }
     }
-  } catch (error) {
-    ElMessage.error('删除文件失败');
+  }
+  if (selectedFiles.value.length > 0) {
+    ElMessage.success('已通过粘贴添加文件');
   }
 };
 
-const copyToClipboard = (text: string) => {
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  document.body.appendChild(textarea);
-  textarea.select();
-  document.execCommand('copy');
-  document.body.removeChild(textarea);
-};
-
-// 组件加载时监听粘贴事件，卸载时移除
 onMounted(() => {
   window.addEventListener('paste', handlePaste);
 });
@@ -530,104 +268,148 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.upload-page-container {
-  max-width: 800px;
-  margin: 0 auto;
+.page-container {
   padding: 20px;
+  height: 100%;
 }
 
-.upload-card {
-  width: 100%;
+.content-card {
+  height: 100%;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 500;
 }
 
-.file-uploader {
+.upload-dragger {
   margin-bottom: 20px;
-}
-
-.file-list-card,
-.uploaded-files-card {
-  margin: 20px 0;
-}
-
-.file-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .upload-actions {
   text-align: center;
-  margin: 20px 0;
 }
 
-.message-section {
+.progress-section {
   margin-top: 20px;
-}
-
-.upload-message {
-  margin: 20px 0;
-}
-
-/* 上传进度相关样式 - 使用CSS变量适配暗色主题 */
-.upload-progress-container {
-  margin: 20px 0;
-  border: 1px solid;
-  border-color: var(--el-border-color-light, #EBEEF5);
-  border-radius: 4px;
-  padding: 10px;
-  background-color: var(--container-bg-color, rgba(255, 255, 255, 0.95));
-  color: var(--text-color, #1e293b);
-  box-shadow: 0 2px 12px 0 var(--box-shadow-color, rgba(0, 0, 0, 0.08));
-}
-
-.upload-status-message {
-  margin-bottom: 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
 }
 
 .file-progress-item {
-  margin-bottom: 10px;
-}
-
-.file-progress-item:last-child {
-  margin-bottom: 0;
-}
-
-.file-info {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .file-name {
-  font-size: 14px;
-  color: var(--text-color, #606266);
-  max-width: 80%;
+  flex-shrink: 1; /* Allow shrinking */
+  max-width: 120px; /* Set max-width instead of fixed width */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* 暗色主题下特定的样式 */
-html.dark .upload-progress-container {
-  background-color: var(--container-bg-color, rgba(47, 47, 47, 0.95));
-  border-color: rgba(84, 84, 84, 0.5);
+.el-progress {
+  flex-grow: 1;
 }
 
-html.dark .file-name {
-  color: var(--text-color, #e2e8f0);
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  min-height: 200px;
+}
+
+.uploaded-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.uploaded-file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: var(--hover-bg-color);
+}
+
+.file-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uploaded-file-name {
+  font-size: 14px;
 }
 
 .batch-actions {
   margin-top: 15px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 15px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
 }
 
-.batch-actions .el-button + .el-button {
-  margin-left: 15px;
+:deep(.el-progress-bar__inner--striped) {
+  animation-duration: 2s; /* 减慢流动动画速度，默认为1s */
+}
+
+/* Responsive styles for UploadPage.vue */
+@media (max-width: 767px) { /* Mobile breakpoint */
+  .page-container {
+    padding: 10px; /* Reduce padding on mobile */
+  }
+
+  .card-header {
+    flex-wrap: wrap; /* Allow header items to wrap */
+    justify-content: center; /* Center header items */
+    text-align: center;
+  }
+
+  .card-header .el-button {
+    margin-top: 5px; /* Add some space if button wraps */
+  }
+
+  .upload-actions .el-button {
+    width: 100%; /* Make upload button full width */
+  }
+
+  .file-progress-item {
+    flex-direction: column; /* Stack file name and progress bar */
+    align-items: flex-start; /* Align items to start */
+  }
+
+  .file-name {
+    width: 100%; /* Take full width */
+    max-width: none; /* Remove max-width constraint */
+    text-align: left;
+  }
+
+  .el-progress {
+    width: 100%; /* Make progress bar full width */
+  }
+
+  .uploaded-file-item {
+    flex-direction: column; /* Stack file details and buttons */
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .uploaded-file-item .el-button-group {
+    width: 100%; /* Make button group full width */
+    justify-content: flex-start; /* Align buttons to start */
+  }
 }
 </style>

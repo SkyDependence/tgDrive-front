@@ -87,11 +87,17 @@
                 <el-icon><Document /></el-icon>
                 <span class="uploaded-file-name">{{ file.fileName }}</span>
               </div>
-              <el-button-group size="small">
-                <el-button :icon="Link" @click="copyMarkdown(file)" />
-                <el-button :icon="CopyDocument" @click="copyLink(file)" />
-                <el-button :icon="Download" @click="openLink(file.downloadUrl)" />
-              </el-button-group>
+              <div class="file-actions">
+                <el-tooltip content="复制 Markdown 格式" placement="top">
+                  <el-button text circle :icon="Link" @click="copyMarkdown(file)" />
+                </el-tooltip>
+                <el-tooltip content="复制下载链接" placement="top">
+                  <el-button text circle :icon="Paperclip" @click="copyLink(file)" />
+                </el-tooltip>
+                <el-tooltip content="打开/下载文件" placement="top">
+                  <el-button text circle :icon="View" @click="openLink(file.downloadLink)" />
+                </el-tooltip>
+              </div>
             </div>
             <div class="batch-actions">
               <el-button @click="batchCopyMarkdown" :disabled="uploadedFiles.length === 0" size="small" plain>批量复制 (MD)</el-button>
@@ -109,11 +115,11 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { ElMessage, UploadFile, UploadFiles, UploadRawFile, UploadInstance } from 'element-plus';
-import { UploadFilled, Upload, Document, Link, CopyDocument, Download, Tickets } from '@element-plus/icons-vue';
+import { UploadFilled, Upload, Document, Link, Tickets, Paperclip, View } from '@element-plus/icons-vue';
 
 interface UploadedFile {
   fileName: string;
-  downloadUrl: string;
+  downloadLink: string;
   fileId: string;
 }
 
@@ -208,11 +214,11 @@ const copyToClipboard = (text: string, message: string) => {
 };
 
 const copyMarkdown = (file: UploadedFile) => {
-  copyToClipboard(`[${file.fileName}](${file.downloadUrl})`, 'Markdown 格式已复制');
+  copyToClipboard(`[${file.fileName}](${file.downloadLink})`, 'Markdown 格式已复制');
 };
 
 const copyLink = (file: UploadedFile) => {
-  copyToClipboard(file.downloadUrl, '下载链接已复制');
+  copyToClipboard(file.downloadLink, '下载链接已复制');
 };
 
 const openLink = (url: string) => {
@@ -220,12 +226,12 @@ const openLink = (url: string) => {
 };
 
 const batchCopyMarkdown = () => {
-  const text = uploadedFiles.value.map(f => `[${f.fileName}](${f.downloadUrl})`).join('\n');
+  const text = uploadedFiles.value.map(f => `[${f.fileName}](${f.downloadLink})`).join('\n');
   copyToClipboard(text, `已批量复制 ${uploadedFiles.value.length} 个 Markdown 链接`);
 };
 
 const batchCopyLinks = () => {
-  const text = uploadedFiles.value.map(f => f.downloadUrl).join('\n');
+  const text = uploadedFiles.value.map(f => f.downloadLink).join('\n');
   copyToClipboard(text, `已批量复制 ${uploadedFiles.value.length} 个下载链接`);
 };
 
@@ -351,6 +357,11 @@ onBeforeUnmount(() => {
 
 .uploaded-file-name {
   font-size: 14px;
+}
+
+.file-actions {
+  display: flex;
+  gap: 5px;
 }
 
 .batch-actions {

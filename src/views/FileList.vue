@@ -37,12 +37,13 @@
             {{ formatUploadTime(scope.row.uploadTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="320" align="center" fixed="right">
+        <el-table-column label="操作" width="400" align="center" fixed="right">
           <template #default="scope">
             <el-button-group>
               <el-button type="primary" size="small" @click="copyMarkdown(scope.row)" :icon="Memo">Markdown</el-button>
               <el-button type="success" size="small" @click="copyLink(scope.row)" :icon="Link">链接</el-button>
               <el-button type="warning" size="small" @click="openLink(scope.row.downloadUrl)" :icon="Download">下载</el-button>
+              <el-button type="danger" size="small" @click="handleDelete(scope.row)" :icon="Delete">删除</el-button>
             </el-button-group>
           </template>
         </el-table-column>
@@ -80,6 +81,7 @@
                 <el-button type="primary" size="small" @click.stop="copyMarkdown(file)" :icon="Memo" circle />
                 <el-button type="success" size="small" @click.stop="copyLink(file)" :icon="Link" circle />
                 <el-button type="warning" size="small" @click.stop="openLink(file.downloadUrl)" :icon="Download" circle />
+                <el-button type="danger" size="small" @click.stop="handleDelete(file)" :icon="Delete" circle />
               </el-button-group>
             </div>
           </div>
@@ -105,6 +107,15 @@
             plain
           >
             批量复制 (链接)
+          </el-button>
+          <el-button 
+            type="danger" 
+            @click="batchDelete" 
+            :disabled="selectedFiles.length === 0"
+            :icon="Delete"
+            plain
+          >
+            批量删除
           </el-button>
         </div>
         <el-pagination
@@ -137,10 +148,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import request from '../utils/request';
-import { ElMessage, ElCheckbox } from 'element-plus';
-import { FolderOpened, Refresh, Document, Link, Download, Memo } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox, ElCheckbox } from 'element-plus';
+import { FolderOpened, Refresh, Document, Link, Download, Memo, Delete } from '@element-plus/icons-vue';
+import { deleteFiles } from '../api/file';
 
 interface FileItem {
   fileName: string;
@@ -214,6 +226,69 @@ const batchCopyMarkdown = () => {
 const batchCopyLinks = () => {
   const text = selectedFiles.value.map(f => f.downloadUrl).join('\n');
   copyToClipboard(text, `已批量复制 ${selectedFiles.value.length} 个下载链接`);
+};
+
+const handleDelete = async (file: FileItem) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除文件 "${file.fileName}" 吗？此操作不可恢复。`,
+      '警告',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    );
+    
+    const fileIds = [file.fileId];
+    const response = await deleteFiles(fileIds);
+    if (response.data?.code === 1) {
+      ElMessage.success('文件删除成功');
+      // Refresh list
+      fetchFileList();
+    } else {
+      ElMessage.error(response.data?.msg || '删除失败');
+    }
+  } catch (error) {
+    // If error is 'cancel', it means user clicked cancel button.
+    if (error !== 'cancel') {
+      ElMessage.error('删除操作失败');
+    }
+  }
+};
+
+const batchDelete = async () => {
+  if (selectedFiles.value.length === 0) {
+    ElMessage.warning('请至少选择一个文件');
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedFiles.value.length} 个文件吗？此操作不可恢复。`,
+      '警告',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    );
+
+    const fileIds = selectedFiles.value.map(f => f.fileId);
+    const response = await deleteFiles(fileIds);
+    if (response.data?.code === 1) {
+      ElMessage.success(`成功删除 ${selectedFiles.value.length} 个文件`);
+      selectedFiles.value = [];
+      // Refresh list
+      fetchFileList();
+    } else {
+      ElMessage.error(response.data?.msg || '批量删除失败');
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除操作失败');
+    }
+  }
 };
 
 const formatUploadTime = (timestamp: number) => {

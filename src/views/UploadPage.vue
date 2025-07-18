@@ -97,6 +97,9 @@
                 <el-tooltip content="打开/下载文件" placement="top">
                   <el-button text circle :icon="View" @click="openLink(file.downloadLink)" />
                 </el-tooltip>
+                <el-tooltip content="删除文件" placement="top">
+                  <el-button text circle :icon="Delete" @click="handleDelete(file)" />
+                </el-tooltip>
               </div>
             </div>
             <div class="batch-actions">
@@ -111,11 +114,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { ElMessage, UploadFile, UploadFiles, UploadRawFile, UploadInstance } from 'element-plus';
-import { UploadFilled, Upload, Document, Link, Tickets, Paperclip, View } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox, UploadFile, UploadFiles, UploadRawFile, UploadInstance } from 'element-plus';
+import { UploadFilled, Upload, Document, Link, Tickets, Paperclip, View, Delete } from '@element-plus/icons-vue';
+import { deleteFiles } from '../api/file';
 
 interface UploadedFile {
   fileName: string;
@@ -233,6 +237,33 @@ const batchCopyMarkdown = () => {
 const batchCopyLinks = () => {
   const text = uploadedFiles.value.map(f => f.downloadLink).join('\n');
   copyToClipboard(text, `已批量复制 ${uploadedFiles.value.length} 个下载链接`);
+};
+
+const handleDelete = async (file: UploadedFile) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除文件 "${file.fileName}" 吗？此操作不可恢复。`,
+      '警告',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    );
+    
+    const response = await deleteFiles([file.fileId]);
+    if (response.data?.code === 1) {
+      ElMessage.success('文件删除成功');
+      // Remove file from the list
+      uploadedFiles.value = uploadedFiles.value.filter(f => f.fileId !== file.fileId);
+    } else {
+      ElMessage.error(response.data?.msg || '删除失败');
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除操作失败');
+    }
+  }
 };
 
 const handlePaste = (event: ClipboardEvent) => {

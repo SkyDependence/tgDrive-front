@@ -88,18 +88,10 @@
                 <span class="uploaded-file-name">{{ file.fileName }}</span>
               </div>
               <div class="file-actions">
-                <el-tooltip content="复制 Markdown 格式" placement="top">
-                  <el-button text circle :icon="Link" @click="copyMarkdown(file)" />
-                </el-tooltip>
-                <el-tooltip content="复制下载链接" placement="top">
-                  <el-button text circle :icon="Paperclip" @click="copyLink(file)" />
-                </el-tooltip>
-                <el-tooltip content="打开/下载文件" placement="top">
-                  <el-button text circle :icon="View" @click="openLink(file.downloadLink)" />
-                </el-tooltip>
-                <el-tooltip content="删除文件" placement="top">
-                  <el-button text circle :icon="Delete" @click="handleDelete(file)" />
-                </el-tooltip>
+                <el-button type="primary" size="small" :icon="Link" @click="copyMarkdown(file)">MD</el-button>
+                <el-button type="success" size="small" :icon="Paperclip" @click="copyLink(file)">链接</el-button>
+                <el-button type="warning" size="small" :icon="View" @click="openLink(file.downloadLink)">打开</el-button>
+                <el-button type="danger" size="small" :icon="Delete" @click="handleDelete(file)">删除</el-button>
               </div>
             </div>
             <div class="batch-actions">
@@ -392,6 +384,7 @@ onBeforeUnmount(() => {
 
 .file-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
 }
 

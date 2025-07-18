@@ -76,13 +76,11 @@
               <span>大小: {{ file.size }}</span>
               <span>上传时间: {{ formatUploadTime(file.uploadTime) }}</span>
             </div>
-            <div class="file-actions">
-              <el-button-group>
-                <el-button type="primary" size="small" @click.stop="copyMarkdown(file)" :icon="Memo" circle />
-                <el-button type="success" size="small" @click.stop="copyLink(file)" :icon="Link" circle />
-                <el-button type="warning" size="small" @click.stop="openLink(file.downloadUrl)" :icon="Download" circle />
-                <el-button type="danger" size="small" @click.stop="handleDelete(file)" :icon="Delete" circle />
-              </el-button-group>
+            <div class="file-actions mobile-actions">
+              <el-button type="primary" size="small" @click.stop="copyMarkdown(file)" :icon="Memo">Markdown</el-button>
+              <el-button type="success" size="small" @click.stop="copyLink(file)" :icon="Link">链接</el-button>
+              <el-button type="warning" size="small" @click.stop="openLink(file.downloadUrl)" :icon="Download">下载</el-button>
+              <el-button type="danger" size="small" @click.stop="handleDelete(file)" :icon="Delete">删除</el-button>
             </div>
           </div>
         </div>
@@ -97,7 +95,7 @@
             :icon="Memo"
             plain
           >
-            批量复制 (MD)
+            {{ isMobile ? '复制MD' : '批量复制 (MD)' }}
           </el-button>
           <el-button 
             type="success" 
@@ -106,7 +104,7 @@
             :icon="Link"
             plain
           >
-            批量复制 (链接)
+            {{ isMobile ? '复制链接' : '批量复制 (链接)' }}
           </el-button>
           <el-button 
             type="danger" 
@@ -115,7 +113,7 @@
             :icon="Delete"
             plain
           >
-            批量删除
+            {{ isMobile ? '删除' : '批量删除' }}
           </el-button>
         </div>
         <el-pagination
@@ -301,7 +299,7 @@ const openUpdateDialog = () => {
 
 const confirmUpdate = async () => {
   isDialogVisible.value = false;
-  const loading = ElMessage({ message: '正在更新...', type: 'info', duration: 0 });
+  const loadingInstance = ElMessage({ message: '正在更新...', type: 'info', duration: 0 });
   try {
     const response = await request.put('/file-url');
     if (response.data?.code === 1) {
@@ -313,7 +311,7 @@ const confirmUpdate = async () => {
   } catch (error) {
     ElMessage.error('更新失败，请检查网络');
   } finally {
-    loading.close();
+    loadingInstance.close();
   }
 };
 
@@ -474,6 +472,12 @@ onBeforeUnmount(() => {
 .mobile-file-item .file-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.mobile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* Responsive styles for FileList.vue */
